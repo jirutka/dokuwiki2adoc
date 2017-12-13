@@ -1021,7 +1021,7 @@ s/[]//g
 # I = 04  Separates the stack from the input data
 # B 05  to escape some strings; will be replaced by a zero wodth space
 #        U+200B at end of script 
-# C 06  Tentatively  replaces "mono-spaced" '' =>  => ++
+# C 06  Tentatively  replaces "mono-spaced" '' =>  => ``
 # 07  %% preceding the text not to be parsed (as <nowiki>)
 # 08   %% following the text not to be parsed (as </nowiki>)
 # 0B  `
@@ -1617,7 +1617,7 @@ s//]$$/g
 s//$$/g
 s//$$/g
 s//$$/g
-s//++/g
+s//``/g
 s//`/g
 s//'/g
 s//``/g
