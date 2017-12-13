@@ -1035,12 +1035,12 @@ s/[]//g
 # 13  Tentatively replaces | n tables f no cell boundary, then restored
 #         as "^" once converted (no special meaning in AsciiDoc syntax)
 # B 14  table row
-# 15  [ then $$[
+# 15  [ then ++[++
 # 16  indicates that a table cell have already been formatted
 # 17  //
 # 18  [[
 # 19   ]]
-# 1A  ] the ]$$
+# 1A  ] then ++]++
 # 1D  tentative beginning and end of image:target[attributes)
 # 1E  last line was /^\n$/
 1s/$//
@@ -1093,9 +1093,11 @@ s/\]]//g
 # Escape existing  [<text>] that should not be parsed in AsciiDoc.
 # We do that before any conversion that would lead to [<text>] that
 # should be parsed, like [source] or [verse]
-# [ and ]  will be eventually escaped as $$[ and ]$$ but we tentatively
+# [ and ]  will be eventually escaped as ++[++ and ++]++ but we tentatively
 # replace them by   and  respectively to avoid collisions with
-# "no formatting" opening or closing tags that are converted to $$.
+# "no formatting" opening or closing tags that are converted to ++.
+# NOTE: I'm not sure if this reasoning is still valid after changing
+# $[[ and ]]$$ to ++[++ and ++]++. ~JJ
 /[]/ !{
 	s/\[//g
 	s/]//g
@@ -1612,11 +1614,11 @@ s/$\$/+++$$+++/g
 :print
 # Finish to convert the lists, revert tentative substitutions. 
 s:://:g
-s//$$[/g
-s//]$$/g
-s//$$/g
-s//$$/g
-s//$$/g
+s//++[++/g
+s//++]++/g
+s//++/g
+s//++/g
+s//++/g
 s//``/g
 s//'`/g
 s//`'/g
