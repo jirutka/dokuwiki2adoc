@@ -1024,10 +1024,10 @@ s/[]//g
 # C 06  Tentatively  replaces "mono-spaced" '' =>  => ``
 # 07  %% preceding the text not to be parsed (as <nowiki>)
 # 08   %% following the text not to be parsed (as </nowiki>)
-# 0B  `
-# OC  '
-# C 0E   ``
-# 0F   ''
+# 0B  left single quotation mark: ' => ^K => '`
+# OC  right single quotation mark: ' => ^L => `'
+# C 0E   left double quotation mark: " => ^N => "`
+# 0F   right double quotation mark: " => ^O => `"
 # 10  </nowiki>
 # 11  various tentative replacements
 # 12  tentatively replaces | n tables f no cell boundary, then escaped
@@ -1618,10 +1618,10 @@ s//$$/g
 s//$$/g
 s//$$/g
 s//``/g
-s//`/g
-s//'/g
-s//``/g
-s//''/g
+s//'`/g
+s//`'/g
+s//"`/g
+s//`"/g
 # Restore the [source,<language>] and [verse] patterns.
 s//[[/g
 s//]]/g
