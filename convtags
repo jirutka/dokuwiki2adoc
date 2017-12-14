@@ -88,7 +88,9 @@ KEEPIMAGES=${KEEPIMAGES:-yes}
 ICONSDIR=${ICONSDIR:-/etc/asciidoc/images/icons}
 #
 # End of configuration
-#
+
+set -eu
+
 # Gather the settings in the configuration file if provided by the user.
 # The settings in that file override those above.
 if [ "$CONFIGFILE" ]; then
@@ -99,6 +101,7 @@ if [ "$CONFIGFILE" ]; then
 		exit
 	fi
 fi
+
 # Insure that the paths will end up with one trailing <solidus>.
 DKROOT=${DKROOT%/}/
 DKIMAGES=${DKIMAGES%/}/
@@ -128,8 +131,8 @@ help() {
 }
 
 dw2adoc() {
-	asciidoc_tmp=$(mktemp) || exit 1
-	cleaned_tmp=$(mktemp) || exit 1
+	asciidoc_tmp=$(mktemp)
+	cleaned_tmp=$(mktemp)
 
 	# We remove also all zero width spaces U+200B, writing one after [
 	# on line below.
@@ -166,7 +169,7 @@ adoc_xhtml11() {
 		-o "$2" "$1"
 }
 
-case "$1" in
+case "${1:-}" in
 	settings)
 		cat <<-EOF
 		  Current settings:
