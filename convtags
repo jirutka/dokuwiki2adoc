@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 #
 # convtags is a bidirectional converter beetween DokuWiki and AsciiDoc
 # formatted text files. See http://slint.fr/misc/convtags/README
@@ -93,7 +93,7 @@ ICONSDIR=${ICONSDIR:-/etc/asciidoc/images/icons}
 # The settings in that file override those above.
 if [ "$CONFIGFILE" ]; then
 	if [ -f "$CONFIGFILE" ]; then
-		. $CONFIGFILE
+		. "$CONFIGFILE"
 	else
 		echo "The configuration file $CONFIGFILE was not found."
 		exit
@@ -102,103 +102,116 @@ fi
 # Insure that the paths will end up with one trailing <solidus>.
 DKROOT=${DKROOT%/}/
 DKIMAGES=${DKIMAGES%/}/
-Help() {
-echo "
-  convtag: bidirectional converter between DokuWiki and AsciiDoc text files
 
-  Usage: convtags da [DokuWiki file] [AsciiiDoc file]
-         convtags ad [AsciiDoc file] [DokuWiki file]
-         convtags aw [AsciiDoc file] [Web page in XHTML format]
-         convtags config   # information about configuration settings
-         convtags settings # display current settings
-         convtags support  # how to get support
+help() {
+	cat <<-EOF
+	  convtag: bidirectional converter between DokuWiki and AsciiDoc text files
 
-  Warning:  \"convtag ad\" has a narrow scope. It is limited to converting
-  back to DokuWiki AsciiDoc files that were converted by \"convtags da\".
+	  Usage: convtags da [DokuWiki file] [AsciiiDoc file]
+	         convtags ad [AsciiDoc file] [DokuWiki file]
+	         convtags aw [AsciiDoc file] [Web page in XHTML format]
+	         convtags config   # information about configuration settings
+	         convtags settings # display current settings
+	         convtags support  # how to get support
 
-  Of course \"convtags aw\" needs AsciiDoc to work.
+	  Warning:  "convtag ad" has a narrow scope. It is limited to converting
+	  back to DokuWiki AsciiDoc files that were converted by "convtags da".
+
+	  Of course "convtags aw" needs AsciiDoc to work.
   
-  Visit http://slint.fr/misc/convtags to know more and get the current
-  release.
+	  Visit http://slint.fr/misc/convtags to know more and get the current
+	  release.
   
-  This is convtags version $VERSION released on ${DATE}.
-"
+	  This is convtags version $VERSION released on $DATE.
+	EOF
+	exit
 }
-DokuWiki2AsciiDoc() {
-	ASCIIDOCTMP=`mktemp` || exit 1
-	CLEANED=`mktemp` || exit 1
+
+dw2adoc() {
+	asciidoc_tmp=$(mktemp) || exit 1
+	cleaned_tmp=$(mktemp) || exit 1
+
 	# We remove also all zero width spaces U+200B, writing one after [
 	# on line below.
-	< $1 sed "s/[​]//g" > $CLEANED
-	sed -e "`< $0 sed -n "/^#@part1@/,/^#@part2@/p"`" $CLEANED > $ASCIIDOCTMP
-	rm -f $CLEANED
-	DKROOT="`echo ${DKROOT%/}/|sed s.//..`"
-	DKIMAGES="`echo ${DKIMAGES%/}/|sed s.//..`"
-	sed -n -e "`< $0 sed -n "/^#@part2@/,/^#@part3@/p" |\
-	sed "sDKROOT$DKROOTg" |\
-	sed "sDKIMAGES$DKIMAGESg"`" $ASCIIDOCTMP > $2
-	DKROOT="`echo ${DKROOT%/}/|sed s..//.`"
-	DKIMAGES="`echo ${DKIMAGES%/}/|sed s..//.`"
-	rm -f $ASCIIDOCTMP
+	< "$1" sed "s/[​]//g" > "$cleaned_tmp"
+	sed -e "$(< "$0" sed -n "/^#@part1@/,/^#@part2@/p")" "$cleaned_tmp" > "$asciidoc_tmp"
+	rm -f "$cleaned_tmp"
+
+	DKROOT="$(echo ${DKROOT%/}/ | sed s.//..)"
+	DKIMAGES="$(echo ${DKIMAGES%/}/ | sed s.//..)"
+
+	sed -n -e "$(< "$0" sed -n "/^#@part2@/,/^#@part3@/p" \
+		| sed "sDKROOT$DKROOTg" \
+		| sed "sDKIMAGES$DKIMAGESg")" "$asciidoc_tmp" > "$2"
+
+	DKROOT="$(echo ${DKROOT%/}/ | sed s..//.)"
+	DKIMAGES="$(echo ${DKIMAGES%/}/ | sed s..//.)"
+
+	rm -f "$asciidoc_tmp"
 }
-AsciiDoc2DokuWiki() {
-	if [ "$KEEPIMAGES" = "no" ];then
+
+adoc2dw() {
+	if [ "$KEEPIMAGES" = 'no' ]; then
 		DKIMAGES=""
 	fi
-	sed -e "`< $0 sed -n "/^#@part3@/,/^#@EOF@/p" |\
-	sed "sDKROOT$DKROOTg" |\
-	sed "sDKIMAGES$DKIMAGESg"`"  $1  >  $2
+	sed -e "$(< "$0" sed -n "/^#@part3@/,/^#@EOF@/p" \
+		| sed "sDKROOT$DKROOTg" \
+		| sed "sDKIMAGES$DKIMAGESg")" "$1" > "$2"
 }
-AsciiDoc() {
+
+adoc_xhtml11() {
 	asciidoc -b xhtml11 -a icons \
-	-a iconsdir=$ICONSDIR \
-	-a imagesdir=$DKIMAGES \
-	-o $2 $1
+		-a iconsdir=$ICONSDIR \
+		-a imagesdir=$DKIMAGES \
+		-o "$2" "$1"
 }
-if [ "$1" = "settings" ]; then
-	echo "
-  Current settings:
-  CONFIGFILE=$CONFIGFILE
-  DKROOT=$DKROOT
-  DKIMAGES=$DKIMAGES
-  KEEPIMAGES=$KEEPIMAGES
-  ICONSDIR=$ICONSDIR
+
+case "$1" in
+	settings)
+		cat <<-EOF
+		  Current settings:
+		  CONFIGFILE=$CONFIGFILE
+		  DKROOT=$DKROOT
+		  DKIMAGES=$DKIMAGES
+		  KEEPIMAGES=$KEEPIMAGES
+		  ICONSDIR=$ICONSDIR
   
-  You are using convtags version $VERSION released on $DATE
+		  You are using convtags version $VERSION released on $DATE
   
-  Type \"convtags config\" to know more.
-"
-	exit
-fi
-if [ "$1" = "config" ]; then
-	< $0 sed -n '/^# Configuration/,/^# End of configuration/p' \
-	|sed '1s/^/\n/' \
-	|sed '$d' \
-	|sed 's/^#/ /'
-	exit
-elif [ "$1" = "support" ]; then
-	< $0 sed -n '/^# Support/,/^# End of support/p' \
-	|sed '1s/^/\n/' \
-	|sed '$d' \
-	|sed 's/^#/ /'
-	exit
-elif [ $# -ne 3 ];then
-	Help
-	exit
-elif [ "$1" = "da" ];then
-	DokuWiki2AsciiDoc $2 $3
-	exit
-elif [ $1 = "ad" ];then
-	AsciiDoc2DokuWiki $2 $3
-	exit
-elif [ "$1" = "aw" ]; then
-	AsciiDoc $2 $3
-	exit
-else
-	Help
-	exit
-fi
-#
+		  Type "convtags config" to know more.
+		EOF
+	;;
+	config)
+		< "$0" sed -n '/^# Configuration/,/^# End of configuration/p' \
+			| sed '1s/^/\n/' \
+			| sed '$d' \
+			| sed 's/^#/ /'
+	;;
+	support)
+		< "$0" sed -n '/^# Support/,/^# End of support/p' \
+			| sed '1s/^/\n/' \
+			| sed '$d' \
+			| sed 's/^#/ /'
+	;;
+	da)
+		[ $# -eq 3 ] || help
+		dw2adoc "$2" "$3"
+	;;
+	ad)
+		[ $# -eq 3 ] || help
+		adoc2dw "$2" "$3"
+	;;
+	aw)
+		[ $# -eq 3 ] || help
+		adoc_xhtml11 "$2" "$3"
+	;;
+	*)
+		help
+	;;
+esac
+
+exit
+
 #@part1@ ---------------------------------------------------------------
 #
 # Rationale
