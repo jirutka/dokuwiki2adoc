@@ -1305,7 +1305,7 @@ s@ftps://@ftps:@g
 }
 \@[^]*\([^[]\{1,\}\)@ !{
 	# Replace [[<target>]] with link:DKROOT<target>[].
-	s@\ *\([^>#[]\{1,\}\)@link:DKROOT\1[]@g
+	s@\ *\([^>[]\{1,\}\)@link:DKROOT\1[]@g
 }
 :endlinks
 #
