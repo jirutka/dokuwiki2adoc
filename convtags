@@ -1247,6 +1247,13 @@ s@ftps://@ftps:@g
 	s@{{  *\([^{ ]*\)}}@\1[float="right"]@
 	s@{{\([^{ ]*\)}}@\1[""]@
 	# linking
+	# Replace ":" (namespace separator) in links with "/", except external
+	# images (containing "//" (^W).
+	/[^]*/ {
+		:imglink
+		s@\([^[:]*\):\([^[]*\[[^]]*\]\)@\1/\2@
+		t imglink
+	}
 	# In case of an external image, we do not set a <target> but convert to
 	# image::[link=<target>
 	# If a <vertical line> directly precedes the first , then it is
@@ -1286,10 +1293,18 @@ s@ftps://@ftps:@g
 #
 # We do not convert the "local" links (i.e. those that point to somewhere in
 # the same page) as we do not know that page's name.
+\@[^]*\([^|[]*\)\(|[^[]\{1,\}\)\{0,1\}@ !{
+	# Replace ":" in links with "/".
+	:interlink
+	s@\\([^|>:]*\):\([^|>]*\)\(|[^[]\{1,\}\)\{0,1\}@\1/\2\3@
+	t interlink
+}
 \@[^]*\([^|]*\)|\([^[]\{1,\}\)@ !{
+	# Replace [[<target>|<title>]] with link:DKROOT<target>[<title>].
 	s@\\([^| >]*\) *| *\([^>]\{1,\}\)@link:DKROOT\1[\2]@g
 }
 \@[^]*\([^[]\{1,\}\)@ !{
+	# Replace [[<target>]] with link:DKROOT<target>[<target>].
 	s@\\([^>#[]\{1,\}\)@link:DKROOT\1[\1]@g
 }
 :endlinks
