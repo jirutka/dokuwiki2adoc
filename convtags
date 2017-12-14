@@ -1300,14 +1300,18 @@ s@ftps://@ftps:@g
 \@[^]*\([^|]*\)|\([^[]\{1,\}\)@ !{
 	# Replace [[#ANCHOR|TITLE]] with <<ANCHOR,TITLE>>.
 	s@\ *#\([^| >]*\) *| *\([^>]\{1,\}\)@<<\1,\2>>@g
-	# Replace [[<target>|<title>]] with link:DKROOT<target>[<title>].
-	s@\ *\([^| >]*\) *| *\([^>]\{1,\}\)@link:DKROOT\1[\2]@g
+	# Replace [[<target>|<title>]] with xref:<target>#[<title>].
+	s@\ *\([^| >#]*\) *| *\([^>]\{1,\}\)@xref:\1#[\2]@g
+	# Replace [[<target>|<title>]] with xref:<target>[<title>].
+	s@\ *\([^| >]*\) *| *\([^>]\{1,\}\)@xref:\1[\2]@g
 }
 \@[^]*\([^[]\{1,\}\)@ !{
 	# Replace [[#ANCHOR]] with <<ANCHOR>>.
 	s@\ *#\([^>#[]\{1,\}\)@<<\1>>@g
-	# Replace [[<target>]] with link:DKROOT<target>[].
-	s@\ *\([^>[]\{1,\}\)@link:DKROOT\1[]@g
+	# Replace [[<target>]] with xref:<target>#[].
+	s@\ *\([^>#[]\{1,\}\)@xref:\1#[]@g
+	# Replace [[<target>]] with link:<target>[].
+	s@\ *\([^>[]\{1,\}\)@xref:\1[]@g
 }
 :endlinks
 #
