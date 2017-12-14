@@ -1,4 +1,5 @@
 #!/bin/sh
+# vim: set fileencoding=utf-8:
 #
 # convtags is a bidirectional converter beetween DokuWiki and AsciiDoc
 # formatted text files. See http://slint.fr/misc/convtags/README
@@ -1528,9 +1529,16 @@ s//))/g
 /[^]*(r)/ !{
 	s/(r)/(R)/g
 }
-# We don't convert the em dash, because in AsciiDoc standard configuration
-# there is no way to convert to en dash, only to em dash.
-#
+# em dash
+# ======
+/[^]*---/ !{
+	s/---/—/g  # U+2014
+}
+# en dash
+# =======
+/[^]*--/ !{
+	s/--/–/g  # U+2013
+}
 # When processing following items we need to write non greedy BREs, thus
 # negate the closing mark inside the BRE. To ease that, we tentatively
 # replace closing marks made of several characters by a single character.
