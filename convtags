@@ -1292,9 +1292,9 @@ s@ftps://@ftps:@g
 # These are links of which the target is on the server that runs DokuWiki.
 #
 \@[^]*\([^|[]*\)\(|[^[]\{1,\}\)\{0,1\}@ !{
-	# Replace ":" in links with "/".
+	# Replace ":" in target (but not anchor) with "/".
 	:interlink
-	s@\\([^|>:]*\):\([^|>]*\)\(|[^[]\{1,\}\)\{0,1\}@\1/\2\3@
+	s@\\([^|>#:]*\):\([^|>]*\)\(|[^[]\{1,\}\)\{0,1\}@\1/\2\3@
 	t interlink
 }
 \@[^]*\([^|]*\)|\([^[]\{1,\}\)@ !{
