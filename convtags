@@ -117,7 +117,7 @@ dw2adoc() {
 
 	# We remove also all zero width spaces U+200B, writing one after [
 	# on line below.
-	< "$1" $SED "s/[​]//g" > "$cleaned_tmp"
+	< "$1" $SED "s/[​]//g" > "$cleaned_tmp"
 	$SED -e "$(< "$0" $SED -n "/^#@part1@/,/^#@part2@/p")" "$cleaned_tmp" > "$asciidoc_tmp"
 	rm -f "$cleaned_tmp"
 
@@ -1044,6 +1044,7 @@ s/[]//g
 # 1A  ] then ++]++
 # 1D  tentative beginning and end of image:target[attributes)
 # 1E  last line was /^\n$/
+# 1F  ` constrained mono-spaced
 1s/$//
 # If we see a line with just a <plus> sign it is a list item continuation.
 # _If the next is a heading, replace the <plus> with a <new line>
@@ -1619,6 +1620,27 @@ s//\\|/g
 s//^/g
 s/@@@@//
 s/$\$/+++$$+++/g
+#
+#
+# Replace unconstrained marks with constrained
+# ============================================
+# Tentatively replace beginning of line with ^Q.
+s/^//
+# **bold** to *bold*
+/[^]*[^[:alnum:]:;}_*]\*\*[^*]*\*\*/ !{
+	s/\([^[:alnum:]:;}_*]\)\*\*\([^*[:blank:]]\)\([^*]*[^*[:blank:]]\)\{0,1\}\*\*\([^*[:alnum:]]\)/\1*\2\3*\4/g
+}
+# __italic__ to _italic_
+/[^]*[^[:alnum:]:;}_]__[^_]*__/ !{
+	s/\([^[:alnum:]:;}_]\)__\([^_[:blank:]]\)\([^_]*[^_[:blank:]]\)\{0,1\}__\([^_[:alnum:]]\)/\1_\2\3_\4/g
+}
+# ``mono-spaced`` to `mono-spaced`
+/[^]*[^[:alnum:]:;}_][^]*/ !{
+	s/\([^[:alnum:]:;}_]\)\([[:graph:]]\)\([^]*[[:graph:]]\)\{0,1\}\([^[:alnum:]]\)/\1\2\3\4/g
+}
+# Remove tentative indicator of beginning of line.
+s///
+#
 :print
 # Finish to convert the lists, revert tentative substitutions. 
 s:://:g
@@ -1637,6 +1659,7 @@ s//[[/g
 s//]]/g
 s//​/ # Substitution by a zero width space U+200B
 s///g
+s//`/g
 h
 x
 # remove the indicator that says: "previous line included /^+$/"
