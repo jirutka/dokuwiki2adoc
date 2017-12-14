@@ -71,6 +71,15 @@ DKROOT=${DKROOT:-http://docs.slackware.com}
 #
 DKIMAGES=${DKIMAGES:-http://docs.slackware.com/_media}
 #
+# QUOTESTYPE specifies what type of quotation marks use in Asciidoc output.
+# Options:
+#   asciidoctor - '`single`', "`double`"
+#   plain       - 'single', "double"
+#   unicode-en  - ‘single’, ‘double’
+#   unicode-cs  - ‚single‘, „double“
+#
+QUOTESTYPE=${QUOTESTYPE:-asciidoctor}
+#
 # SED is a sed command to use.
 #
 SED=${SED:-sed}
@@ -93,6 +102,13 @@ fi
 # Insure that the paths will end up with one trailing <solidus>.
 DKROOT=${DKROOT%/}/
 DKIMAGES=${DKIMAGES%/}/
+
+case "$QUOTESTYPE" in
+	asciidoctor) LS_QUOTE="'\`" RS_QUOTE="\`'" LD_QUOTE='"`' RD_QUOTE='`"';;
+	unicode-en) LS_QUOTE='‘' RS_QUOTE='’' LD_QUOTE='“' RD_QUOTE='”';;
+	unicode-cs) LS_QUOTE='‚' RS_QUOTE='‘' LD_QUOTE='„' RD_QUOTE='“';;
+	*) LS_QUOTE="'" RS_QUOTE="'" LD_QUOTE='"' RD_QUOTE='"';;
+esac
 
 help() {
 	cat >&2 <<-EOF
@@ -126,7 +142,12 @@ dw2adoc() {
 
 	$SED -n -e "$(< "$0" $SED -n "/^#@part2@/,/^#@EOF@/p" \
 		| $SED "sDKROOT$DKROOTg" \
-		| $SED "sDKIMAGES$DKIMAGESg")" "$asciidoc_tmp" > "$2"
+		| $SED "sDKIMAGES$DKIMAGESg" \
+		| $SED "sLS_QUOTE$LS_QUOTEg" \
+		| $SED "sRS_QUOTE$RS_QUOTEg" \
+		| $SED "sLD_QUOTE$LD_QUOTEg" \
+		| $SED "sRD_QUOTE$RD_QUOTEg")" \
+		"$asciidoc_tmp" > "$2"
 
 	DKROOT="$(echo ${DKROOT%/}/ | $SED s..//.)"
 	DKIMAGES="$(echo ${DKIMAGES%/}/ | $SED s..//.)"
@@ -141,6 +162,7 @@ case "${1:-}" in
 		  CONFIGFILE=$CONFIGFILE
 		  DKROOT=$DKROOT
 		  DKIMAGES=$DKIMAGES
+		  QUOTESTYPE=$QUOTESTYPE
 		  SED=$SED
   
 		  You are using convtags version $VERSION released on $DATE
@@ -1650,10 +1672,10 @@ s//++/g
 s//++/g
 s//++/g
 s//``/g
-s//'`/g
-s//`'/g
-s//"`/g
-s//`"/g
+s//LS_QUOTE/g
+s//RS_QUOTE/g
+s//LD_QUOTE/g
+s//RD_QUOTE/g
 # Restore the [source,<language>] and [verse] patterns.
 s//[[/g
 s//]]/g
