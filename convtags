@@ -97,8 +97,8 @@ if [ "$CONFIGFILE" ]; then
 	if [ -f "$CONFIGFILE" ]; then
 		. "$CONFIGFILE"
 	else
-		echo "The configuration file $CONFIGFILE was not found."
-		exit
+		echo "The configuration file $CONFIGFILE was not found." >&2
+		exit 1
 	fi
 fi
 
@@ -107,7 +107,7 @@ DKROOT=${DKROOT%/}/
 DKIMAGES=${DKIMAGES%/}/
 
 help() {
-	cat <<-EOF
+	cat >&2 <<-EOF
 	  convtag: bidirectional converter between DokuWiki and AsciiDoc text files
 
 	  Usage: convtags da [DokuWiki file] [AsciiiDoc file]
@@ -127,7 +127,7 @@ help() {
   
 	  This is convtags version $VERSION released on $DATE.
 	EOF
-	exit
+	exit 1
 }
 
 dw2adoc() {
