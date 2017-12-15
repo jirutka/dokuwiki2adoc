@@ -1303,22 +1303,25 @@ s@ftps://@ftps:@g
 	s@\ *\./\{0,1\}\([^.|>][^|>]*\)\(|[^]\{1,\}\)\{0,1\}@\1\2@g
 	# Replace ".." with "../" at the beginning of the target.
 	s@\ *\.\.\([^/.|>][^|>]*\)\(|[^]\{1,\}\)\{0,1\}@../\1\2@g
-}
-\@[^]*\([^|]*\)|\([^]\{1,\}\)@ !{
-	# Replace [[#ANCHOR|TITLE]] with <<ANCHOR,TITLE>>.
-	s@\ *#\([^|> ]*\) *| *\([^]\{1,\}\)@<<\1,\2>>@g
-	# Replace [[<target>|<title>]] with xref:<target>#[<title>].
-	s@\ *\([^#|> ]*\) *| *\([^]\{1,\}\)@xref:\1#[\2]@g
-	# Replace [[<target>|<title>]] with xref:<target>[<title>].
-	s@\ *\([^|> ]*\) *| *\([^]\{1,\}\)@xref:\1[\2]@g
-}
-\@[^]*\([^]\{1,\}\)@ !{
-	# Replace [[#ANCHOR]] with <<ANCHOR>>.
-	s@\ *#\([^#>]\{1,\}\)@<<\1>>@g
-	# Replace [[<target>]] with xref:<target>#[].
-	s@\ *\([^#>]\{1,\}\)@xref:\1#[]@g
-	# Replace [[<target>]] with link:<target>[].
-	s@\ *\([^>]\{1,\}\)@xref:\1[]@g
+
+	# Links with title
+	\@[^]*\([^|]*\)|\([^]\{1,\}\)@ !{
+		# Replace [[#ANCHOR|TITLE]] with <<ANCHOR,TITLE>>.
+		s@\ *#\([^|> ]*\) *| *\([^]\{1,\}\)@<<\1,\2>>@g
+		# Replace [[<target>|<title>]] with xref:<target>#[<title>].
+		s@\ *\([^#|> ]*\) *| *\([^]\{1,\}\)@xref:\1#[\2]@g
+		# Replace [[<target>|<title>]] with xref:<target>[<title>].
+		s@\ *\([^|> ]*\) *| *\([^]\{1,\}\)@xref:\1[\2]@g
+	}
+	# Links without title
+	\@[^]*\([^]\{1,\}\)@ !{
+		# Replace [[#ANCHOR]] with <<ANCHOR>>.
+		s@\ *#\([^#>]\{1,\}\)@<<\1>>@g
+		# Replace [[<target>]] with xref:<target>#[].
+		s@\ *\([^#>]\{1,\}\)@xref:\1#[]@g
+		# Replace [[<target>]] with link:<target>[].
+		s@\ *\([^>]\{1,\}\)@xref:\1[]@g
+	}
 }
 :endlinks
 #
