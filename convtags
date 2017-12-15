@@ -1296,6 +1296,13 @@ s@ftps://@ftps:@g
 	:interlink
 	s@\\([^:#|>]*\):\([^|>]*\)\(|[^]\{1,\}\)\{0,1\}@\1/\2\3@
 	t interlink
+	# Prepend "/" to the target with a namespace that does not start with
+	# "/" or ".".
+	s@\ *\([^/.|>]\{2,\}/[^|>]*\)\(|[^]\{1,\}\)\{0,1\}@/\1\2@g
+	# Remove useless prefixes "." and "./" in the target.
+	s@\ *\./\{0,1\}\([^.|>][^|>]*\)\(|[^]\{1,\}\)\{0,1\}@\1\2@g
+	# Replace ".." with "../" at the beginning of the target.
+	s@\ *\.\.\([^/.|>][^|>]*\)\(|[^]\{1,\}\)\{0,1\}@../\1\2@g
 }
 \@[^]*\([^|]*\)|\([^]\{1,\}\)@ !{
 	# Replace [[#ANCHOR|TITLE]] with <<ANCHOR,TITLE>>.
