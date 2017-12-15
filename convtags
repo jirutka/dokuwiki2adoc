@@ -87,6 +87,10 @@ KEEPIMAGES=${KEEPIMAGES:-yes}
 #
 ICONSDIR=${ICONSDIR:-/etc/asciidoc/images/icons}
 #
+# SED is a sed command to use.
+#
+SED=${SED:-sed}
+#
 # End of configuration
 
 set -eu
@@ -136,19 +140,19 @@ dw2adoc() {
 
 	# We remove also all zero width spaces U+200B, writing one after [
 	# on line below.
-	< "$1" sed "s/[​]//g" > "$cleaned_tmp"
-	sed -e "$(< "$0" sed -n "/^#@part1@/,/^#@part2@/p")" "$cleaned_tmp" > "$asciidoc_tmp"
+	< "$1" $SED "s/[​]//g" > "$cleaned_tmp"
+	$SED -e "$(< "$0" $SED -n "/^#@part1@/,/^#@part2@/p")" "$cleaned_tmp" > "$asciidoc_tmp"
 	rm -f "$cleaned_tmp"
 
-	DKROOT="$(echo ${DKROOT%/}/ | sed s.//..)"
-	DKIMAGES="$(echo ${DKIMAGES%/}/ | sed s.//..)"
+	DKROOT="$(echo ${DKROOT%/}/ | $SED s.//..)"
+	DKIMAGES="$(echo ${DKIMAGES%/}/ | $SED s.//..)"
 
-	sed -n -e "$(< "$0" sed -n "/^#@part2@/,/^#@part3@/p" \
-		| sed "sDKROOT$DKROOTg" \
-		| sed "sDKIMAGES$DKIMAGESg")" "$asciidoc_tmp" > "$2"
+	$SED -n -e "$(< "$0" $SED -n "/^#@part2@/,/^#@part3@/p" \
+		| $SED "sDKROOT$DKROOTg" \
+		| $SED "sDKIMAGES$DKIMAGESg")" "$asciidoc_tmp" > "$2"
 
-	DKROOT="$(echo ${DKROOT%/}/ | sed s..//.)"
-	DKIMAGES="$(echo ${DKIMAGES%/}/ | sed s..//.)"
+	DKROOT="$(echo ${DKROOT%/}/ | $SED s..//.)"
+	DKIMAGES="$(echo ${DKIMAGES%/}/ | $SED s..//.)"
 
 	rm -f "$asciidoc_tmp"
 }
@@ -157,9 +161,9 @@ adoc2dw() {
 	if [ "$KEEPIMAGES" = 'no' ]; then
 		DKIMAGES=""
 	fi
-	sed -e "$(< "$0" sed -n "/^#@part3@/,/^#@EOF@/p" \
-		| sed "sDKROOT$DKROOTg" \
-		| sed "sDKIMAGES$DKIMAGESg")" "$1" > "$2"
+	$SED -e "$(< "$0" $SED -n "/^#@part3@/,/^#@EOF@/p" \
+		| $SED "sDKROOT$DKROOTg" \
+		| $SED "sDKIMAGES$DKIMAGESg")" "$1" > "$2"
 }
 
 adoc_xhtml11() {
@@ -178,6 +182,7 @@ case "${1:-}" in
 		  DKIMAGES=$DKIMAGES
 		  KEEPIMAGES=$KEEPIMAGES
 		  ICONSDIR=$ICONSDIR
+		  SED=$SED
   
 		  You are using convtags version $VERSION released on $DATE
   
@@ -185,16 +190,16 @@ case "${1:-}" in
 		EOF
 	;;
 	config)
-		< "$0" sed -n '/^# Configuration/,/^# End of configuration/p' \
-			| sed '1s/^/\n/' \
-			| sed '$d' \
-			| sed 's/^#/ /'
+		< "$0" $SED -n '/^# Configuration/,/^# End of configuration/p' \
+			| $SED '1s/^/\n/' \
+			| $SED '$d' \
+			| $SED 's/^#/ /'
 	;;
 	support)
-		< "$0" sed -n '/^# Support/,/^# End of support/p' \
-			| sed '1s/^/\n/' \
-			| sed '$d' \
-			| sed 's/^#/ /'
+		< "$0" $SED -n '/^# Support/,/^# End of support/p' \
+			| $SED '1s/^/\n/' \
+			| $SED '$d' \
+			| $SED 's/^#/ /'
 	;;
 	da)
 		[ $# -eq 3 ] || help
