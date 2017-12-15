@@ -36,8 +36,8 @@ mv convtags /usr/bin
 Dependencies
 ------------
 
-convtags has no hard dependency beyond a shell and some usual utilities
-found in all UNIX-like systems, mainly sed.
+* [POSIX-sh](http://pubs.opengroup.org/onlinepubs/009695399/utilities/xcu_chap02.html) compatible shell (e.g. Busybox ash, dash, ZSH, Bash, ...)
+* `sed` supporting GNU extensions: `\?` and `\+`
 
 Usage
 -----
