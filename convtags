@@ -1191,6 +1191,21 @@ s@ftps://@ftps:@g
 # Convert e.g. [[http://slint.fr]] to http://slint.fr
 		s@\([^]\) *\([hf]t\{1,2\}ps\?:[^]*\)@\1\2@g
 		s@^ *\([hf]t\{1,2\}ps\?:[^]*\)@\1@g
+#
+# Email addresses
+# ===============
+/[^]* *\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\)\(?[^|]*\)\?\(|[^]*\)\?/ !{
+	# Convert [[<email> | <title>]] to mailto:<email>[<title>].
+	s/ *\(mailto:\)\?\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\) *| *\([^]*\)/mailto:\2[\3]/g
+	# Convert [[<email>?subject=<subject> | <title>]] to mailto:<email>["<title>", "<subject>"].
+	# Note: This needs attribute linkattrs to be set.
+	s/ *\(mailto:\)\?\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\)?subject=\([^|&]*\) *| *\([^]*\)/mailto:\2["\4", "\3"]/g
+	# Convert [[<email>]] to mailto:<email>[].
+	s/ *\(mailto:\)\?\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\) */mailto:\2[]/g
+	# Convert [[<email>?subject=<subject>]] to mailto:<email>[, "<subject>"].
+	# Note: This needs attribute linkattrs to be set.
+	s/ *\(mailto:\)\?\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\)?subject=\([^|&]*\) */mailto:\2[, "\3"]/g
+}
 # Images
 # ======
 # DokuWiki's links to images parsing is done in the script 
