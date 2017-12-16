@@ -1253,14 +1253,14 @@ s@ftps://@ftps:@g
 	# 
 	# We remove aligning spaces, and spaces before }}
 	# We also isolate the pattern {{..}} that we are processing
-	s@{{  *\([^{ ]*\)  *|\([^{]*\) *}}@\1["\2",align="center"]@
-	s@{{\([^{ ]*\)  *|\([^{]*\) *}}@\1["\2",align="left"]@
-	s@{{  *\([^{ ]*\)|\([^{]*\) *}}@\1["\2",float="right"]@
-	s@{{\([^{ ]*\)|\([^{]*\) *}}@\1["\2"]@
-	s@{{  *\([^{|]*\)  *}}@\1[align="center"]@
-	s@{{\([^{ ]*\)  *}}@\1[align="left"]@
-	s@{{  *\([^{ ]*\)}}@\1[float="right"]@
-	s@{{\([^{ ]*\)}}@\1[""]@
+	s@{{  *\([^|} ]*\)  *|\([^}]*\) *}}@\1["\2",align="center"]@
+	s@{{\([^|} ]*\)  *|\([^}]*\) *}}@\1["\2",align="left"]@
+	s@{{  *\([^|} ]*\)|\([^}]*\) *}}@\1["\2",float="right"]@
+	s@{{\([^|} ]*\)|\([^}]*\) *}}@\1["\2"]@
+	s@{{  *\([^|}]*\)  *}}@\1[align="center"]@
+	s@{{\([^|} ]*\)  *}}@\1[align="left"]@
+	s@{{  *\([^|} ]*\)}}@\1[float="right"]@
+	s@{{\([^|} ]*\)}}@\1[""]@
 	# linking
 	# Replace ":" (namespace separator) in links with "/", except external
 	# images (containing "//" (^W).
@@ -1275,21 +1275,21 @@ s@ftps://@ftps:@g
 	# an image link. We'll convert it as it as a direct link.
 	/ [^ ]*|[^]*/ {s@\([^ ]*\)|\([^]]*\)@\2,link="DKIMAGES\1"@}
 	/.*direct.*/ s@\(.*\)?[^]]*@&,link="DKIMAGES\1"@
-	/.*linkonly.*/ {
-		s@\(.*\)\(?.*\)@\1@
-		s@\(.*\)linkonly@\1@
+	/[^[]*linkonly.*/ {
+		s@\([^[]*\)\(?[^]*\)@\1@
+		s@\([^[]*\)linkonly@\1@
 	}
 	# Dimensions
-	/.*[&?]0x[[:digit:]]\+/ {
-		s@.*[&?]0x\([[:digit:]]\+\)[^]]*@&,height="\1"@
-		s@\(.*[&?]\)0x[[:digit:]]\+@\1@
+	/[^[]*[&?]0x[[:digit:]]\+/ {
+		s@[^[]*[&?]0x\([[:digit:]]\+\)[^]]*@&,height="\1"@
+		s@\([^[]*[&?]\)0x[[:digit:]]\+@\1@
 	}
-	/.*[&?][[:digit:]]\+x[[:digit:]]\+/ {
-		s@.*[&?]\([[:digit:]]\+\)x\([[:digit:]]\+\)[^]]*@&,width="\1",height="\2"@
-		s@\(.*[&?]\)[[:digit:]]\+x[[:digit:]]\+@\1@
+	/[^[]*[&?][[:digit:]]\+x[[:digit:]]\+/ {
+		s@[^[]*[&?]\([[:digit:]]\+\)x\([[:digit:]]\+\)[^]]*@&,width="\1",height="\2"@
+		s@\([^[]*[&?]\)[[:digit:]]\+x[[:digit:]]\+@\1@
 	}
-	/.*[&?][^x=]*[[:digit:]]\+/ {
-		s@.*[&?][^x[:digit:]]*\([[:digit:]]\+\)[^]]*@&,width="\1"@
+	/[^[]*[&?][^x=[]*[[:digit:]]\+/ {
+		s@[^[]*[&?][^x[:digit:][]*\([[:digit:]]\+\)[^]]*@&,width="\1"@
 	}
 	# remove empty alt text
 	s/\([^]*\)\("",\?\)/\1/g
@@ -1297,8 +1297,8 @@ s@ftps://@ftps:@g
 	# We also insert a <new line> before the image other wise it could
 	# be rendered in-line (well,two <new line>. One is not enough ;) but
 	# only if we are not in  a list item
-	// s@\([^?]*\)[?]\{0,\}.*\(\[.*\)@image::\1\2@
-	// !s@\([^?]*\)[?]\{0,\}.*\(\[.*\)@\n\nimage::\1\2@
+	// s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@image::\1\2@
+	// !s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@\n\nimage::\1\2@
 	t images
 }
 # 
