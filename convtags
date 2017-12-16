@@ -1295,14 +1295,21 @@ s@ftps://@ftps:@g
 	/[^[]*[&?][^x=[]*[[:digit:]]\+/ {
 		s@[^[]*[&?][^x[:digit:][]*\([[:digit:]]\+\)[^]]*@&,width="\1"@
 	}
-	# remove empty alt text
-	s/\([^]*\)\("",\?\)/\1/g
-	# We use the block-element AsciiDoc syntax so that alignment works
-	# We also insert a <new line> before the image other wise it could
-	# be rendered in-line (well,two <new line>. One is not enough ;) but
-	# only if we are not in  a list item
-	// s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@image::\1\2@
-	// !s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@\n\nimage::\1\2@
+	# Image
+	/[^?[]*\.\(gif\|jpg\|jpeg\|png\|svg\)[?[]/I {
+		# remove empty alt text
+		s/\([^]*\)\("",\?\)/\1/g
+		# We use the block-element AsciiDoc syntax so that alignment works
+		# We also insert a <new line> before the image other wise it could
+		# be rendered in-line (well,two <new line>. One is not enough ;) but
+		# only if we are not in  a list item
+		// s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@image::\1\2@
+		// !s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@\n\nimage::\1\2@
+	}
+	# Other media
+	/[^?[]*\.\(gif\|jpg\|jpeg\|png\|svg\)[?[]/I !{
+		s@/\?\([^?[]\+\)[?]*[^[]*\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
+	}
 	t media
 }
 # 
