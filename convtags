@@ -1206,9 +1206,9 @@ s@ftps://@ftps:@g
 	# Note: This needs attribute linkattrs to be set.
 	s/ *\(mailto:\)\?\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\)?subject=\([^|&]*\) */mailto:\2[, "\3"]/g
 }
-# Images
-# ======
-# DokuWiki's links to images parsing is done in the script 
+# Media
+# =====
+# DokuWiki's links to media parsing is done in the script 
 # dokuwiki/inc/parser/handler.php, function Doku_Handler_Parse_Media($match).
 # AsciiDoc's link images syntax is stated in
 # http://www.methods.co.nz/asciidoc/userguide.html#_inline_macros
@@ -1243,7 +1243,11 @@ s@ftps://@ftps:@g
 # of the "-a imagesdir=" AsciiDoc command line. This break links to images
 # stored elsewhere.
 #
-:images
+# Note: DokuWiki syntax {{...}} is not used only for images, but for any files
+# stored in media library! Thus we have to detect media type, based on file
+# extension, and use appropriate AsciiDoc macro.
+#
+:media
 /[^]*{{[^{]}}/ !{
 	# Alignment
 	# In DokuWiki syntax the alignment is computed from spacing:
@@ -1263,16 +1267,16 @@ s@ftps://@ftps:@g
 	s@{{\([^|} ]*\)}}@\1[""]@
 	# linking
 	# Replace ":" (namespace separator) in links with "/", except external
-	# images (containing "//" (^W).
+	# media files (containing "//" (^W).
 	/[^]*/ {
 		:imglink
 		s@\([^[:]*\):\([^[]*\[[^]]*\]\)@\1/\2@
 		t imglink
 	}
-	# In case of an external image, we do not set a <target> but convert to
-	# image::[link=<target>
+	# In case of an external media, we do not set a <target> but convert to
+	# <macro>::[link=<target>
 	# If a <vertical line> directly precedes the first , then it is
-	# an image link. We'll convert it as it as a direct link.
+	# a media link. We'll convert it as it as a direct link.
 	/ [^ ]*|[^]*/ {s@\([^ ]*\)|\([^]]*\)@\2,link="DKIMAGES\1"@}
 	/.*direct.*/ s@\(.*\)?[^]]*@&,link="DKIMAGES\1"@
 	/[^[]*linkonly.*/ {
@@ -1299,7 +1303,7 @@ s@ftps://@ftps:@g
 	# only if we are not in  a list item
 	// s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@image::\1\2@
 	// !s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@\n\nimage::\1\2@
-	t images
+	t media
 }
 # 
 # Internal links
