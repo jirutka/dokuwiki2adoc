@@ -71,6 +71,12 @@ DKROOT=${DKROOT:-http://docs.slackware.com}
 #
 DKIMAGES=${DKIMAGES:-http://docs.slackware.com/_media}
 #
+# IMAGEEXTS is a comma separated list of file extensions (without a dot) that
+# are acceptable for image::[] directive. Other media will be converted just
+# to link:[].
+#
+IMAGEEXTS=${IMAGEEXTS:-gif,jpg,jpeg,png,svg}
+#
 # QUOTESTYPE specifies what type of quotation marks use in Asciidoc output.
 # Options:
 #   asciidoctor - '`single`', "`double`"
@@ -102,6 +108,8 @@ fi
 # Insure that the paths will end up with one trailing <solidus>.
 DKROOT=${DKROOT%/}/
 DKIMAGES=${DKIMAGES%/}/
+
+IMAGE_FILE_PATT="\\\\.\\\\($(echo "$IMAGEEXTS" | $SED 's/,/\\\\|/g')\\\\)"
 
 case "$QUOTESTYPE" in
 	asciidoctor) LS_QUOTE="'\`" RS_QUOTE="\`'" LD_QUOTE='"`' RD_QUOTE='`"';;
@@ -146,7 +154,8 @@ dw2adoc() {
 		| $SED "sLS_QUOTE$LS_QUOTEg" \
 		| $SED "sRS_QUOTE$RS_QUOTEg" \
 		| $SED "sLD_QUOTE$LD_QUOTEg" \
-		| $SED "sRD_QUOTE$RD_QUOTEg")" \
+		| $SED "sRD_QUOTE$RD_QUOTEg" \
+		| $SED "sIMAGE_FILE_PATT$IMAGE_FILE_PATTg")" \
 		"$asciidoc_tmp" > "$2"
 
 	DKROOT="$(echo ${DKROOT%/}/ | $SED s..//.)"
@@ -162,6 +171,7 @@ case "${1:-}" in
 		  CONFIGFILE=$CONFIGFILE
 		  DKROOT=$DKROOT
 		  DKIMAGES=$DKIMAGES
+		  IMAGEEXTS=$IMAGEEXTS
 		  QUOTESTYPE=$QUOTESTYPE
 		  SED=$SED
   
@@ -1296,7 +1306,7 @@ s@ftps://@ftps:@g
 		s@[^[]*[&?][^x[:digit:][]*\([[:digit:]]\+\)[^]]*@&,width="\1"@
 	}
 	# Image
-	/[^?[]*\.\(gif\|jpg\|jpeg\|png\|svg\)[?[]/I {
+	/[^?[]*IMAGE_FILE_PATT[?[]/I {
 		# remove empty alt text
 		s/\([^]*\)\("",\?\)/\1/g
 		# We use the block-element AsciiDoc syntax so that alignment works
@@ -1307,7 +1317,7 @@ s@ftps://@ftps:@g
 		// !s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@\n\nimage::\1\2@
 	}
 	# Other media
-	/[^?[]*\.\(gif\|jpg\|jpeg\|png\|svg\)[?[]/I !{
+	/[^?[]*IMAGE_FILE_PATT[?[]/I !{
 		s@/\?\([^?[]\+\)[?]*[^[]*\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
 	}
 	t media
