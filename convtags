@@ -1355,12 +1355,15 @@ s@^ *\([hf]t\{1,2\}ps\?:[^]*\)@\1@g
 	/[^?[]*IMAGE_FILE_PATT[?[]/I {
 		# remove empty alt text
 		s/\([^]*\)\("",\?\)/\1/g
-		# We use the block-element AsciiDoc syntax so that alignment works
-		# We also insert a <new line> before the image other wise it could
-		# be rendered in-line (well,two <new line>. One is not enough ;) but
-		# only if we are not in  a list item
-		// s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@image::\1\2@
-		// !s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@\n\nimage::\1\2@
+		# Use block image if there's nothing else on the line,
+		/^ *[^]\+ */ {
+			s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@\nimage::\1\2@
+		}
+		# otherwise use inline image.
+		# XXX: align is ignored for inline images!
+		/^ *[^]\+ */ !{
+			s@ \?\([^?[]*\)[?]*[^[]*\(\[[^]*\) \?@ image:\1\2 @
+		}
 	}
 	# Other media
 	/[^?[]*IMAGE_FILE_PATT[?[]/I !{
