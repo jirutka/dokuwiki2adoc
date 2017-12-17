@@ -1215,6 +1215,8 @@ s@ftps://@ftps:@g
 # These are links of which the target is on the server that runs DokuWiki.
 #
 \@[^]*\([^|]*\)\(|[^]\+\)\?@ !{
+	# Remove blank titles.
+	s@\([^|> ]\+\)| *@\1@g
 	# Replace ":" in target (but not anchor) with "/".
 	:interlink
 	s@\\([^:#|>]*\):\([^|>]*\)\(|[^]\+\)\?@\1/\2\3@
