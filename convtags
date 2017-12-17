@@ -1362,6 +1362,10 @@ s@ftps://@ftps:@g
 	}
 	# Other media
 	/[^?[]*IMAGE_FILE_PATT[?[]/I !{
+		# If title is empty, use file name (not complete path) as the title.
+		/[^[]\+\[""/ {
+			s@\([^/ ]\+\)\[""\([^]]*\]\)@\1["\1"\2@
+		}
 		s@/\?\([^?[]\+\)[?]*[^[]*\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
 	}
 	t media
