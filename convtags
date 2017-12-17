@@ -1186,17 +1186,10 @@ s@ftp://@ftp:@g
 s@ftps://@ftps:@g
 # Remove the space(s) that could precede the vertical bar or follow [[ in
 # Dokuwiki syntax.
-# e.g. [[http://slint.fr  |Slint website]] becomes:
-#      http://slint.fr[Slint website], unless in the case of an "image link"
-# in DokuWiki parlance.
-/[^]* *\([hf]t\{1,2\}ps\?:[^|]*\)| *\([^|{]*\)/ !{
-	s/ *\([hf]t\{1,2\}ps\?:[^| ]*\) *| *\([^|{]*\)/\1[\2]/g
-}
-# For image links, [[http://something|{{<image spec>}}]] becomes
-# <space>http://something|{{<image spec>}} for now, then http://something will
-# be the target of a link= attribute in AsciiDoc's image macro syntax.
-/[^]* *\([hf]t\{1,2\}ps\?:[^|]*\)| *{{[^|}]* *}}/ !{
-	s/ *\([hf]t\{1,2\}ps\?:[^| ]*\) *| *\({{[^|}]* *}}\)/ \1|\2/g
+# e.g. [[  http://slint.fr  | Slint website]] becomes:
+#      http://slint.fr[Slint website]
+/[^]* *\([hf]t\{1,2\}ps\?:[^|]*\)| *\([^]*\)/ !{
+	s/ *\([hf]t\{1,2\}ps\?:[^| ]*\) *| *\([^]*\)/\1[\2]/g
 }
 # Convert e.g. [[http://slint.fr]] to http://slint.fr
 		s@\([^]\) *\([hf]t\{1,2\}ps\?:[^]*\)@\1\2@g
@@ -1215,6 +1208,43 @@ s@ftps://@ftps:@g
 	# Convert [[<email>?subject=<subject>]] to mailto:<email>[, "<subject>"].
 	# Note: This needs attribute linkattrs to be set.
 	s/ *\(mailto:\)\?\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\)?subject=\([^|&]*\) */mailto:\2[, "\3"]/g
+}
+#
+# Internal links
+# ==============
+# These are links of which the target is on the server that runs DokuWiki.
+#
+\@[^]*\([^|]*\)\(|[^]\+\)\?@ !{
+	# Replace ":" in target (but not anchor) with "/".
+	:interlink
+	s@\\([^:#|>]*\):\([^|>]*\)\(|[^]\+\)\?@\1/\2\3@
+	t interlink
+	# Prepend "/" to the target with a namespace that does not start with
+	# "/" or ".".
+	s@\ *\([^/.|>]\{2,\}/[^|>]*\)\(|[^]\+\)\?@/\1\2@g
+	# Remove useless prefixes "." and "./" in the target.
+	s@\ *\./\?\([^.|>][^|>]*\)\(|[^]\+\)\?@\1\2@g
+	# Replace ".." with "../" at the beginning of the target.
+	s@\ *\.\.\([^/.|>][^|>]*\)\(|[^]\+\)\?@../\1\2@g
+
+	# Links with title
+	\@[^]*\([^|]*\)|\([^]\+\)@ !{
+		# Replace [[#ANCHOR|TITLE]] with <<ANCHOR,TITLE>>.
+		s@\ *#\([^|> ]*\) *| *\([^]\+\)@<<\1,\2>>@g
+		# Replace [[<target>|<title>]] with xref:<target>#[<title>].
+		s@\ *\([^#|> ]*\) *| *\([^]\+\)@xref:\1#[\2]@g
+		# Replace [[<target>|<title>]] with xref:<target>[<title>].
+		s@\ *\([^|> ]*\) *| *\([^]\+\)@xref:\1[\2]@g
+	}
+	# Links without title
+	\@[^]*\([^]\+\)@ !{
+		# Replace [[#ANCHOR]] with <<ANCHOR>>.
+		s@\ *#\([^#>]\+\)@<<\1>>@g
+		# Replace [[<target>]] with xref:<target>#[].
+		s@\ *\([^#>]\+\)@xref:\1#[]@g
+		# Replace [[<target>]] with link:<target>[].
+		s@\ *\([^>]\+\)@xref:\1[]@g
+	}
 }
 # Media
 # =====
@@ -1283,12 +1313,26 @@ s@ftps://@ftps:@g
 		s@\([^[:]*\):\([^[]*\[[^]]*\]\)@\1/\2@
 		t imglink
 	}
-	# In case of an external media, we do not set a <target> but convert to
-	# <macro>::[link=<target>
-	# If a <vertical line> directly precedes the first , then it is
-	# a media link. We'll convert it as it as a direct link.
-	/ [^ ]*|[^]*/ {s@\([^ ]*\)|\([^]]*\)@\2,link="DKIMAGES\1"@}
-	/.*direct.*/ s@\(.*\)?[^]]*@&,link="DKIMAGES\1"@
+	# Handle image link
+	#
+	# Example:
+	# 0. [[n:m:start|{{n:img.png|alt}}]]
+	# 1. [[...]] is processed by the link patterns:
+	#    xref:/n/m/start#[{{n:img.png|alt}}]
+	# 2. {{...}} is preprocessed by the patterns above into:
+	#    xref:/n/m/start#[^]n/img.png["alt"]^]]
+	# 3. the patterns below this comment converts it into:
+	#    ^]/n/img.png["alt",link="/n/m/start"]^]
+	# 4. and next patterns finally outputs:
+	#    image::/n/img.png["alt",link="/n/m/start"]
+	/[^ ]*\[[^]*\]/ {
+		s@\([^ ]*[^[ ]*\)\[\([^]]*\)\]\]@\2,link="\1"]@
+		s@xref:\([^[ ]*\)#\[\([^]]*\)\]\]@\2,link="DKIMAGES\1"]@
+		s@xref:\([^[ ]*\)\[\([^]]*\)\]\]@\2,link="DKIMAGES\1"]@
+	}
+	/.*direct.*/ {
+		s@\(.*\)?[^]]*@&,link="DKIMAGES\1"@
+	}
 	/[^[]*linkonly.*/ {
 		s@\([^[]*\)\(?[^]*\)@\1@
 		s@\([^[]*\)linkonly@\1@
@@ -1321,43 +1365,6 @@ s@ftps://@ftps:@g
 		s@/\?\([^?[]\+\)[?]*[^[]*\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
 	}
 	t media
-}
-# 
-# Internal links
-# ==============
-# These are links of which the target is on the server that runs DokuWiki.
-#
-\@[^]*\([^|]*\)\(|[^]\+\)\?@ !{
-	# Replace ":" in target (but not anchor) with "/".
-	:interlink
-	s@\\([^:#|>]*\):\([^|>]*\)\(|[^]\+\)\?@\1/\2\3@
-	t interlink
-	# Prepend "/" to the target with a namespace that does not start with
-	# "/" or ".".
-	s@\ *\([^/.|>]\{2,\}/[^|>]*\)\(|[^]\+\)\?@/\1\2@g
-	# Remove useless prefixes "." and "./" in the target.
-	s@\ *\./\?\([^.|>][^|>]*\)\(|[^]\+\)\?@\1\2@g
-	# Replace ".." with "../" at the beginning of the target.
-	s@\ *\.\.\([^/.|>][^|>]*\)\(|[^]\+\)\?@../\1\2@g
-
-	# Links with title
-	\@[^]*\([^|]*\)|\([^]\+\)@ !{
-		# Replace [[#ANCHOR|TITLE]] with <<ANCHOR,TITLE>>.
-		s@\ *#\([^|> ]*\) *| *\([^]\+\)@<<\1,\2>>@g
-		# Replace [[<target>|<title>]] with xref:<target>#[<title>].
-		s@\ *\([^#|> ]*\) *| *\([^]\+\)@xref:\1#[\2]@g
-		# Replace [[<target>|<title>]] with xref:<target>[<title>].
-		s@\ *\([^|> ]*\) *| *\([^]\+\)@xref:\1[\2]@g
-	}
-	# Links without title
-	\@[^]*\([^]\+\)@ !{
-		# Replace [[#ANCHOR]] with <<ANCHOR>>.
-		s@\ *#\([^#>]\+\)@<<\1>>@g
-		# Replace [[<target>]] with xref:<target>#[].
-		s@\ *\([^#>]\+\)@xref:\1#[]@g
-		# Replace [[<target>]] with link:<target>[].
-		s@\ *\([^>]\+\)@xref:\1[]@g
-	}
 }
 :endlinks
 #
