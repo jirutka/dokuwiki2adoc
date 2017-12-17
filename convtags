@@ -1467,11 +1467,10 @@ s//]]/g
 	# same one twice.   
 	# We tentatively use U+11  for "align center" as in DokuWiki "^"
 	# denotes a cell boundary.
-	# "left" is currently the default so the first substitution is
-	# useless,but who knows...
-	s/\([|^] \?[^|^ ][^|^]*[|^]\)/<\1/
-	s/\([|^]  [^|^]*[^|^ ] \?[|^]\)/>\1/
-	s/\([|^]  [^|^]*   *[|^]\)/\1/
+	# "left" (<) is the default in AsciiDoc so we omit it.
+	s/\([|^] \?[^|^ ][^|^]*[|^]\)/\1/  # left
+	s/\([|^]  [^|^]*[^|^ ] \?[|^]\)/>\1/  # right
+	s/\([|^]  [^|^]*   *[|^]\)/\1/  # center
 	# Format the cell as a header, case occurring.
 	s/\^/h|/
 	# Be ready to process the next cell on the right.
