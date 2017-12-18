@@ -234,12 +234,12 @@ exit
 # 01  begins a <code> ... </code> block
 # 02  begins a <file> ... </file> block
 # 03  begins a <nowiki> ... </nowiki> area
-# 04  Separates the baton from the input data
+# 04  separates the baton from the input data
 # 05  begins a preformatted block
 # 06  list item that can continue on the next line
 # 07  %% preceding the text not to be parsed (as <nowiki>)
-# 08   %% following the text not to be parsed (as </nowiki>)
-# 0E   ends a <code>... or <file>... block or of a code block whose
+# 08  %% following the text not to be parsed (as </nowiki>)
+# 0E  ends a <code>... or <file>... block or of a code block whose
 #         lines begin with two spaces
 # 10  ends a <nowiki> ... </nowiki>
 # 11  %% in case of an odd number of this pattern in a line
@@ -250,7 +250,7 @@ exit
 # 16  marks the beginning of the remaining part of the line where we
 #         still have to look for "no formatting" areas.
 # 1A  begins a <note[^<]*> ... </note> area
-# 1C   tentatively replaces /^  / in a preformatted block.
+# 1C  tentatively replaces /^  / in a preformatted block.
 # We have to deal with DokuWiki' syntax, that:
 # _allows to put the opening or closing tag of a block anywhere on a line
 # _has several ways of marking the beginning and the end of a code block
@@ -1052,27 +1052,27 @@ s/[]//g
 # P 02  <file>
 # 03  <nowiki>
 # I = 04  Separates the stack from the input data
-# B 05  to escape some strings; will be replaced by a zero wodth space
+# B 05  to escape some strings; will be replaced by a zero width space
 #        U+200B at end of script 
-# C 06  Tentatively  replaces "mono-spaced" '' =>  => ``
+# C 06  tentatively replaces "mono-spaced" '' =>  => ``
 # 07  %% preceding the text not to be parsed (as <nowiki>)
-# 08   %% following the text not to be parsed (as </nowiki>)
+# 08  %% following the text not to be parsed (as </nowiki>)
 # 0B  left single quotation mark: ' => ^K => '`
 # OC  right single quotation mark: ' => ^L => `'
-# C 0E   left double quotation mark: " => ^N => "`
-# 0F   right double quotation mark: " => ^O => `"
+# C 0E  left double quotation mark: " => ^N => "`
+# 0F  right double quotation mark: " => ^O => `"
 # 10  </nowiki>
 # 11  various tentative replacements
 # 12  tentatively replaces | n tables f no cell boundary, then escaped
 #         as "\" once converted  
-# 13  Tentatively replaces | n tables f no cell boundary, then restored
+# 13  tentatively replaces | n tables f no cell boundary, then restored
 #         as "^" once converted (no special meaning in AsciiDoc syntax)
 # B 14  table row
 # 15  [ then ++[++
 # 16  indicates that a table cell have already been formatted
 # 17  //
 # 18  [[
-# 19   ]]
+# 19  ]]
 # 1A  ] then ++]++
 # 1D  tentative beginning and end of image:target[attributes)
 # 1E  last line was /^\n$/
@@ -1713,7 +1713,7 @@ s/{/\{/g
 #
 # Emphasized
 # ==========
-# We previously substituted  to // in URLs
+# We previously substituted  to // in URLs
 s@//@@g
 /[^]*\([^][^]*\)/ !{
 	s/\([^][^]*\)/__\1__/g
