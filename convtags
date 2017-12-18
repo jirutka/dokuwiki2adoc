@@ -1316,6 +1316,11 @@ s/ *\([hf]t\{1,2\}ps\?:[^]*\)/\1/g
 # extension, and use appropriate AsciiDoc macro.
 #
 :media
+# Embedded YouTube video
+/{{ *youtube>[^}]*}}/ {
+	s@{{ *youtube>\([[:alpha:]]\+:\)\?\([[:alnum:]_-]\+\)[^}]*}}@\nvideo::\2[youtube]@
+	t media
+}
 /{{[^}]*}}/ {
 	# Alignment
 	# In DokuWiki syntax the alignment is computed from spacing:
