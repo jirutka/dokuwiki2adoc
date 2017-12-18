@@ -1321,6 +1321,10 @@ s/ *\([hf]t\{1,2\}ps\?:[^]*\)/\1/g
 	s@{{ *youtube>\([[:alpha:]]\+:\)\?\([[:alnum:]_-]\+\)[^}]*}}@\nvideo::\2[youtube]@
 	t media
 }
+# Remove special media links such as {{indexmenu>.|tsort}}, {{blog>:news?10}} etc.
+s@{{ *[[:alnum:]_-]\+>[^}]*}}@@
+t media
+# Convert normal media links
 /{{[^}]*}}/ {
 	# Alignment
 	# In DokuWiki syntax the alignment is computed from spacing:
