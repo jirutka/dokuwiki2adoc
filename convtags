@@ -1052,8 +1052,7 @@ s/[]//g
 # P 02  <file>
 # 03  <nowiki>
 # I = 04  Separates the stack from the input data
-# B 05  to escape some strings; will be replaced by a zero width space
-#        U+200B at end of script 
+# B 05  to escape some strings
 # C 06  tentatively replaces "mono-spaced" '' =>  => ``
 # 07  %% preceding the text not to be parsed (as <nowiki>)
 # 08  %% following the text not to be parsed (as </nowiki>)
@@ -1138,7 +1137,7 @@ s/\]]//g
 }
 # Prevent expansion of an include macro inside an AsciiDoc Delimited block.
 /[]/ {
-	s/^include::/&/
+	s/^include::/\\&/
 }
 # Get rid of the Code blocks, converted to Listing blocks: skip parsing
 # their content.
@@ -1755,7 +1754,6 @@ s//RD_QUOTE/g
 # Restore the [source,<language>] and [verse] patterns.
 s//[[/g
 s//]]/g
-s//​/ # Substitution by a zero width space U+200B
 s///g
 s//`/g
 h
