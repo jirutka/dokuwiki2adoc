@@ -1573,10 +1573,6 @@ s//]]/g
 #
 # Admonitions
 # ===========
-s/^<note>\([[:print:]]\)/<note>\n\1/
-s/^<note important>\([[:print:]]\)/<note important>\n\1/
-s/^<note tip>\([[:print:]]\)/<note tip>\n\1/
-s/^<note warning>\([[:print:]]\)/<note warning>\n\1/
 /^<note>/ {
 	s/<note>/[NOTE]\n====/
 }
@@ -1588,9 +1584,6 @@ s/^<note warning>\([[:print:]]\)/<note warning>\n\1/
 }
 /^<note warning>/ {
 	s/<note warning>/[WARNING]\n====/
-}
-\@[^]*\([[:print:]]\)</note>@ !{
-	s@\([[:print:]]\)</note>@\1\n</note>@
 }
 \.^</note>. {
 	s:</note> +: +\n====:
