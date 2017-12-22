@@ -1689,8 +1689,26 @@ s/--/–/g  # U+2013
 	s@@//@g
 }
 #
-# Single quotation marks
-# ======================
+# Replace unconstrained marks with constrained
+# ============================================
+# **bold** to *bold*
+/\*\*[^*]*\*\*/ {
+	s/\(^\|[^[:alnum:]:;}_*]\)\*\*\(\?[^*[:blank:]]\)\([^*]*[^*[:blank:]]\)\?\*\*\(\?[^*[:alnum:]]\)/\1*\2\3*\4/g
+}
+# __italic__ to _italic_
+/__[^_]*__/ {
+	s/\(^\|[^[:alnum:]:;}_]\)__\(\?[^_[:blank:]]\)\([^_]*[^_[:blank:]]\)\?__\(\?[^_[:alnum:]]\)/\1_\2\3_\4/g
+}
+#
+# Quotation marks
+# ===============
+# Remove keyword mark inside ``mono-spaced``.
+:unescape2
+/['"]/ {
+	s/\([^]*\)\([^]*\)/\1\2/
+	t unescape2
+}
+# single quotes
 /'/ {
 	# We allow a single quotation mark to be included inside a word part of a
 	# single quoted set of words. 
@@ -1699,13 +1717,18 @@ s/--/–/g  # U+2013
 	s/\(^\|[ !-.:;_)]\)\([^]\+\)\([ !-.:;_)]\)/\1\2\3/g
 	s//'/g
 }
-#
-# double quotation marks
-# ======================
+# double quotes
 /"/ {
 	s/"//g
 	s/\(^\|[ !-.:;_)]\)\([^]\+\)\([ !-.:;_)]\)/\1\2\3/g
 	s//"/g
+}
+#
+# Replace unconstrained marks with constrained
+# ============================================
+# ``mono-spaced`` to `mono-spaced`
+/[^]*/ {
+	s/\(^\|[^[:alnum:]:;}_]\)\(\?[[:graph:]]\)\([^]*[[:graph:]]\)\?\(\?[^[:alnum:]]\)/\1\2\3\4/g
 }
 #
 # We need to escape opening curly brackets as else a line that contains
@@ -1719,22 +1742,6 @@ s//\\|/g
 s//^/g
 s/@@@@//
 s/$\$/+++$$+++/g
-#
-#
-# Replace unconstrained marks with constrained
-# ============================================
-# **bold** to *bold*
-/\*\*[^*]*\*\*/ {
-	s/\(^\|[^[:alnum:]:;}_*]\)\*\*\(\?[^*[:blank:]]\)\([^*]*[^*[:blank:]]\)\?\*\*\(\?[^*[:alnum:]]\)/\1*\2\3*\4/g
-}
-# __italic__ to _italic_
-/__[^_]*__/ {
-	s/\(^\|[^[:alnum:]:;}_]\)__\(\?[^_[:blank:]]\)\([^_]*[^_[:blank:]]\)\?__\(\?[^_[:alnum:]]\)/\1_\2\3_\4/g
-}
-# ``mono-spaced`` to `mono-spaced`
-/[^]*/ {
-	s/\(^\|[^[:alnum:]:;}_]\)\(\?[[:graph:]]\)\([^]*[[:graph:]]\)\?\(\?[^[:alnum:]]\)/\1\2\3\4/g
-}
 #
 :print
 # Finish to convert the lists, revert tentative substitutions. 
