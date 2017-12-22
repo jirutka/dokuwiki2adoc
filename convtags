@@ -1230,17 +1230,17 @@ s/ *\([hf]t\{1,2\}ps\?:[^]*\)/\1/g
 #
 # Email addresses
 # ===============
-/ *[^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\(?[^|]*\)\?\(|[^]*\)\?/ {
+/ *[^@?| ]\+@[[:alnum:].-]\+\(?[^|]*\)\?\(|[^]*\)\?/ {
 	# Convert [[<email> | <title>]] to mailto:<email>[<title>].
-	s/ *\(mailto:\)\?\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\) *| *\([^]*\)/mailto:\2[\3]/g
+	s/ *\(mailto:\)\?\([^@?| ]\+@[[:alnum:].-]\+\.[[:alpha:]]\{2,\}\) *| *\([^]*\)/mailto:\2[\3]/g
 	# Convert [[<email>?subject=<subject> | <title>]] to mailto:<email>["<title>", "<subject>"].
 	# Note: This needs attribute linkattrs to be set.
-	s/ *\(mailto:\)\?\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\)?subject=\([^|&]*\) *| *\([^]*\)/mailto:\2["\4", "\3"]/g
+	s/ *\(mailto:\)\?\([^@?| ]\+@[[:alnum:].-]\+\.[[:alpha:]]\{2,\}\)?subject=\([^|&]*\) *| *\([^]*\)/mailto:\2["\4", "\3"]/g
 	# Convert [[<email>]] to mailto:<email>[].
-	s/ *\(mailto:\)\?\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\) */mailto:\2[]/g
+	s/ *\(mailto:\)\?\([^@?| ]\+@[[:alnum:].-]\+\.[[:alpha:]]\{2,\}\) */mailto:\2[]/g
 	# Convert [[<email>?subject=<subject>]] to mailto:<email>[, "<subject>"].
 	# Note: This needs attribute linkattrs to be set.
-	s/ *\(mailto:\)\?\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\)?subject=\([^|&]*\) */mailto:\2[, "\3"]/g
+	s/ *\(mailto:\)\?\([^@?| ]\+@[[:alnum:].-]\+\.[[:alpha:]]\{2,\}\)?subject=\([^|&]*\) */mailto:\2[, "\3"]/g
 }
 #
 # Internal links
@@ -1417,7 +1417,7 @@ t media
 #
 # Email addresses
 # ===============
-s/<\([^@>]\{1,30\}@[^>]\{1,30\}[.][[:alpha:]]\{2,\}\)>/\1/
+s/<\([^@>]\{1,30\}@[[:alnum:].-]\{1,30\}[.][[:alpha:]]\{2,\}\)>/\1/
 
 s//[[/g
 s//]]/g
