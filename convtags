@@ -1052,7 +1052,7 @@ s/[]//g
 # P 02  <file>
 # 03  <nowiki>
 # I = 04  Separates the stack from the input data
-# B 05  to escape some strings
+# B 05  to mark characters that have a special meaning
 # C 06  tentatively replaces "mono-spaced" '' =>  => ``
 # 07  %% preceding the text not to be parsed (as <nowiki>)
 # 08  %% following the text not to be parsed (as </nowiki>)
@@ -1164,9 +1164,47 @@ s/\]]//g
 	s@ *\(<!--.*-->\)@// \1@
 	b print
 }
+# To avoid a collision with "emphasized" whose marks are // in Dokuwiki,
+# we will tentatively replace // with U+17 .
+s@http://@http:@g
+s@https://@https:@g
+s@ftp://@ftp:@g
+s@ftps://@ftps:@g
 #
-# We will do further conversions only outside <nowki> ... </nowiki> and
-# outside of %% ... %%, i.e. if the pattern doen't follow [^]*
+# Ruler
+# =====
+/^-----*/ {
+	s/^-----*/'''\n/
+	b print
+}
+#
+# Mark keywords
+# =============
+# Mark sequences that have a special meaning in DokuWiki syntax.
+s:{{:&:g                  # start of media link
+s:}}:&:g                  # end of media link
+s:\*\*:&:g                # bold
+s://:&:g                  # italic
+s:__:&:g                  # underline
+s:'':&:g                  # mono-spaced
+s:\(^\|[^']\)':\1':g    # single quote
+s:":&:g                   # double quote
+s:<:&:g                   # first character of HTML-like tag, email address delimiter
+s:((:&:g                  # start of footnote
+s:)):&:g                  # end of footnote
+s:---:&:g                 # em-space
+s:\(^\|[^-]\)--:\1--:g  # en-space (in middle/end of line)
+s:([cr]):&:g              # (c), (r)
+s:(tm):&:g                # (tm)
+
+# Remove special meaning inside <nowiki> ... </nowiki> and %% ... %%.
+:unescape
+// {
+	s/\([^]*\)/\1/
+	s/\([^]*\)/\1[[/
+	s/\([^]*\)/\1]]/
+	t unescape
+}
 #
 # Links
 # =====
@@ -1177,26 +1215,17 @@ s/\]]//g
 #
 # External links
 # ==============
-# To avoid a collision with "emphasized" whose marks are // in Dokuwiki,
-# we will tentatively replace // with U+17 
-s@http://@http:@g
-s@https://@https:@g
-s@ftp://@ftp:@g
-s@ftps://@ftps:@g
 # Remove the space(s) that could precede the vertical bar or follow [[ in
 # Dokuwiki syntax.
 # e.g. [[  http://slint.fr  | Slint website]] becomes:
 #      http://slint.fr[Slint website]
-/[^]* *\([hf]t\{1,2\}ps\?:[^|]*\)| *\([^]*\)/ !{
-	s/ *\([hf]t\{1,2\}ps\?:[^| ]*\) *| *\([^]*\)/\1[\2]/g
-}
+s/ *\([hf]t\{1,2\}ps\?:[^| ]*\) *| *\([^]*\)/\1[\2]/g
 # Convert e.g. [[http://slint.fr]] to http://slint.fr
-s@\([^]\) *\([hf]t\{1,2\}ps\?:[^]*\)@\1\2@g
-s@^ *\([hf]t\{1,2\}ps\?:[^]*\)@\1@g
+s/ *\([hf]t\{1,2\}ps\?:[^]*\)/\1/g
 #
 # Email addresses
 # ===============
-/[^]* *\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\)\(?[^|]*\)\?\(|[^]*\)\?/ !{
+/ *[^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\(?[^|]*\)\?\(|[^]*\)\?/ {
 	# Convert [[<email> | <title>]] to mailto:<email>[<title>].
 	s/ *\(mailto:\)\?\([^@?| ]\+@[^@?| ]\+\.[[:alpha:]]\{2,\}\) *| *\([^]*\)/mailto:\2[\3]/g
 	# Convert [[<email>?subject=<subject> | <title>]] to mailto:<email>["<title>", "<subject>"].
@@ -1213,7 +1242,7 @@ s@^ *\([hf]t\{1,2\}ps\?:[^]*\)@\1@g
 # ==============
 # These are links of which the target is on the server that runs DokuWiki.
 #
-\@[^]*\([^|]*\)\(|[^]\+\)\?@ !{
+/[^|]*\(|[^]\+\)\?/ {
 	# Remove blank titles.
 	s@\([^|> ]\+\)| *@\1@g
 	# Replace ":" in target (but not anchor) with "/".
@@ -1229,7 +1258,7 @@ s@^ *\([hf]t\{1,2\}ps\?:[^]*\)@\1@g
 	s@\ *\.\.\([^/.|>][^|>]*\)\(|[^]\+\)\?@../\1\2@g
 
 	# Links with title
-	\@[^]*\([^|]*\)|\([^]\+\)@ !{
+	/[^|]*|[^]\+/ {
 		# Replace [[#ANCHOR|TITLE]] with <<ANCHOR,TITLE>>.
 		s@\ *#\([^|> ]*\) *| *\([^]\+\)@<<\1,\2>>@g
 		# Replace [[<target>|<title>]] with xref:<target>#[<title>].
@@ -1238,14 +1267,12 @@ s@^ *\([hf]t\{1,2\}ps\?:[^]*\)@\1@g
 		s@\ *\([^|> ]*\) *| *\([^]\+\)@xref:\1[\2]@g
 	}
 	# Links without title
-	\@[^]*\([^]\+\)@ !{
-		# Replace [[#ANCHOR]] with <<ANCHOR>>.
-		s@\ *#\([^#>]\+\)@<<\1>>@g
-		# Replace [[<target>]] with xref:<target>#[].
-		s@\ *\([^#>]\+\)@xref:\1#[]@g
-		# Replace [[<target>]] with link:<target>[].
-		s@\ *\([^>]\+\)@xref:\1[]@g
-	}
+	# Replace [[#ANCHOR]] with <<ANCHOR>>.
+	s@\ *#\([^#>]\+\)@<<\1>>@g
+	# Replace [[<target>]] with xref:<target>#[].
+	s@\ *\([^#>]\+\)@xref:\1#[]@g
+	# Replace [[<target>]] with link:<target>[].
+	s@\ *\([^>]\+\)@xref:\1[]@g
 }
 # Media
 # =====
@@ -1289,7 +1316,7 @@ s@^ *\([hf]t\{1,2\}ps\?:[^]*\)@\1@g
 # extension, and use appropriate AsciiDoc macro.
 #
 :media
-/[^]*{{[^{]}}/ !{
+/{{[^}]*}}/ {
 	# Alignment
 	# In DokuWiki syntax the alignment is computed from spacing:
 	# _after {{ and before | if there is a caption
@@ -1298,10 +1325,10 @@ s@^ *\([hf]t\{1,2\}ps\?:[^]*\)@\1@g
 	# 
 	# We remove aligning spaces, and spaces before }}
 	# We also isolate the pattern {{..}} that we are processing
-	//! s@{{  *\([^|} ]*\)  *\(|[^}]*\)\? *}}@\1["\2",align="center"]@
-	//! s@{{\([^|} ]*\)  *\(|[^}]*\)\? *}}@\1["\2",align="left"]@
-	//! s@{{  *\([^|} ]*\)\(|[^}]*\)\? *}}@\1["\2",float="right"]@
-	//! s@{{\([^|} ]*\)\(|[^}]*\)\? *}}@\1["\2"]@
+	//! s@{{  *\([^|} ]*\)  *\(|[^}]*\)\? *}}@\1["\2",align="center"]@
+	//! s@{{\([^|} ]*\)  *\(|[^}]*\)\? *}}@\1["\2",align="left"]@
+	//! s@{{  *\([^|} ]*\)\(|[^}]*\)\? *}}@\1["\2",float="right"]@
+	//! s@{{\([^|} ]*\)\(|[^}]*\)\? *}}@\1["\2"]@
 	# Remove "|" from alt text.
 	s@\([^[]*\["\)|\([^]\+\)@\1\2@
 	# linking
@@ -1376,9 +1403,8 @@ s@^ *\([hf]t\{1,2\}ps\?:[^]*\)@\1@g
 #
 # Email addresses
 # ===============
-/[^]*<\(.\{1,30\}@.\{1,30\}[.].\{2,8\}\)>/ !{
-	s/<\(.\{1,30\}@.\{1,30\}[.].\{2,8\}\)>/\1/
-}
+s/<\([^@>]\{1,30\}@[^>]\{1,30\}[.][[:alpha:]]\{2,\}\)>/\1/
+
 s//[[/g
 s//]]/g
 #
@@ -1559,32 +1585,16 @@ s//]]/g
 		/^|====/ s/\n/&\n/
 	}
 }
-# Ruler
-# =====
-#
-/^-----*/ {
-	s/^-----*/'''\n/
-	b print
-}
-# 
 #
 # Admonitions
 # ===========
-/^<note>/ {
-	s/<note>/[NOTE]\n====/
-}
-/^<note important>/ {
-	s/<note important>/[IMPORTANT]\n====/
-}
-/^<note tip>/ {
-	s/<note tip>/[TIP]\n====/
-}
-/^<note warning>/ {
-	s/<note warning>/[WARNING]\n====/
-}
-\.^</note>. {
-	s:</note> +: +\n====:
-	s:</note>:====:
+s/^<note>/[NOTE]\n====/
+s/^<note important>/[IMPORTANT]\n====/
+s/^<note tip>/[TIP]\n====/
+s/^<note warning>/[WARNING]\n====/
+\@^</note>@ {
+	s:^</note> +: +\n====:
+	s:^</note>:====:
 }
 # In AsciiDoc a line beginning with at least a single space begins a
 # literal paragraph.
@@ -1609,90 +1619,93 @@ t breaks
 #
 # footnotes
 # =========
-s/))//g
-/[^]*((\([^][^]*\)/ !{
-	s/((\([^][^]*\)/footnote:[\1]/g
+/((/ {
+	s/))//g
+	s/((\([^]\+\)/footnote:[\1]/g
+	s//))/g
 }
-s//))/g
 # Typographic legal symbols
 # =========================
-/[^]*(c)/ !{
-	s/(c)/(C)/g
-}
-/[^]*(tm)/ !{
-	s/(tm)/(TM)/g
-}
-/[^]*(r)/ !{
-	s/(r)/(R)/g
-}
+s/(c)/(C)/g
+s/(r)/(R)/g
+s/(tm)/(TM)/g
+
 # em dash
 # ======
-/[^]*---/ !{
-	s/---/—/g  # U+2014
-}
+s/---/—/g  # U+2014
 # en dash
 # =======
-/[^]*--/ !{
-	s/--/–/g  # U+2013
-}
+s/--/–/g  # U+2013
 # When processing following items we need to write non greedy BREs, thus
 # negate the closing mark inside the BRE. To ease that, we tentatively
 # replace closing marks made of several characters by a single character.
 #
 # underlined
 # ==========
-s/__//g
-/[^]*\([^][^]*\)/ !{
-	s/\([^][^]*\)/[underline]#\1#/g
+/__/ {
+	s/__//g
+	s/\([^]\+\)/[underline]#\1#/g
+	s//__/g
 }
-s//__/g
 #
 # monospaced
 # ==========
-s/''//g
-/[^]*\([^][^]*\)/ !{
-	s/\([^][^]*\)/\1/g
+/''/ {
+	s/''//g
+	s/\([^]\+\)/\1/g
+	s//''/g
 }
-s//''/g
 #
 # strike through
 # ==============
-s:</del>::g
-/[^]*<del>\([^][^]*\)/ !{
-	s/<del>\([^][^]*\)/[line-through]#\1#/g
+/<del>/ {
+	s:</del>::g
+	s:<del>\([^]\+\):[line-through]#\1#:g  # FIXME: use ## if spaces
+	s::</del>:g
 }
-s::</del>:g
 #
 # superscript
 # ===========
-s:</sup>::g
-/[^]*<sup>\([^][^]*\)/ !{
-	s/<sup>\([^][^]*\)/^\1^/g
+/<sup>/ {
+	s:</sup>::g
+	s:<sup>\([^]\+\):^\1^:g
+	s::</sup>:g
 }
-s::</sup>:g
 #
 # subscript
 # =========
-s:</sub>::g
-/[^]*<sub>\([^][^]*\)/ !{
-	s/<sub>\([^][^]*\)/~\1~/g
+/<sub>/ {
+	s:</sub>::g
+	s:<sub>\([^]\+\):~\1~:g
+	s::</sub>:g
 }
-s::</sub>:g
+#
+# emphasized
+# ==========
+# We previously substituted  to // in URLs
+\@//@ {
+	s@//@@g
+	s@\([^]\+\)@__\1__@g
+	s@@//@g
+}
 #
 # Single quotation marks
 # ======================
-# We allow a single quotation mark to be included inside a word part of a
-# single quoted set of words. 
-s/\([[:alpha:]]\)'\([[:alpha:]]\)/\1\2/g
-/[^]\([ !-.:;_)]\)[']\([^'][^']*\)[']\([ !-.:;_)]\)/ !{
-	s/\(^\|[ !-.:;_)]\)[']\([^'][^']*\)[']\([ !-.:;_)]\)/\1\2\3/g
+/'/ {
+	# We allow a single quotation mark to be included inside a word part of a
+	# single quoted set of words. 
+	s/\([[:alpha:]]\)\('[[:alpha:]]\)/\1\2/g
+	s/'//g
+	s/\(^\|[ !-.:;_)]\)\([^]\+\)\([ !-.:;_)]\)/\1\2\3/g
+	s//'/g
 }
-s/\([[:alpha:]]\)\([[:alpha:]]\)/\1'\2/g
 #
 # double quotation marks
 # ======================
-/[^]\([ !-.:;_)]\)["]\([^"][^"]*\)["]\([ !-.:;_)]\)/ !{
-	s/\(^\|[ !-.:;_)]\)["]\([^"][^"]*\)["]\([ !-.:;_)]\)/\1\2\3/g
+/"/ {
+	s/"//g
+	s/\(^\|[ !-.:;_)]\)\([^]\+\)\([ !-.:;_)]\)/\1\2\3/g
+	s//"/g
 }
 #
 # We need to escape opening curly brackets as else a line that contains
@@ -1700,15 +1713,6 @@ s/\([[:alpha:]]\)\([[:alpha:]]\)/\1'\2/g
 # attribute name, cf:
 # http://www.methods.co.nz/asciidoc/userguide.html#_simple_attributes_references
 s/{/\{/g
-#
-# Emphasized
-# ==========
-# We previously substituted  to // in URLs
-s@//@@g
-/[^]*\([^][^]*\)/ !{
-	s/\([^][^]*\)/__\1__/g
-}
-s@@//@g
 #
 # In an AsciiDoc "psv" table a "|" is escaped lake this: "\|" 
 s//\\|/g
@@ -1720,16 +1724,16 @@ s/$\$/+++$$+++/g
 # Replace unconstrained marks with constrained
 # ============================================
 # **bold** to *bold*
-/[^]*[^[:alnum:]:;}_*]\*\*[^*]*\*\*/ !{
-	s/\(^\|[^[:alnum:]:;}_*]\)\*\*\([^*[:blank:]]\)\([^*]*[^*[:blank:]]\)\?\*\*\([^*[:alnum:]]\)/\1*\2\3*\4/g
+/\*\*[^*]*\*\*/ {
+	s/\(^\|[^[:alnum:]:;}_*]\)\*\*\(\?[^*[:blank:]]\)\([^*]*[^*[:blank:]]\)\?\*\*\(\?[^*[:alnum:]]\)/\1*\2\3*\4/g
 }
 # __italic__ to _italic_
-/[^]*[^[:alnum:]:;}_]__[^_]*__/ !{
-	s/\(^\|[^[:alnum:]:;}_]\)__\([^_[:blank:]]\)\([^_]*[^_[:blank:]]\)\?__\([^_[:alnum:]]\)/\1_\2\3_\4/g
+/__[^_]*__/ {
+	s/\(^\|[^[:alnum:]:;}_]\)__\(\?[^_[:blank:]]\)\([^_]*[^_[:blank:]]\)\?__\(\?[^_[:alnum:]]\)/\1_\2\3_\4/g
 }
 # ``mono-spaced`` to `mono-spaced`
-/[^]*[^[:alnum:]:;}_][^]*/ !{
-	s/\(^\|[^[:alnum:]:;}_]\)\([[:graph:]]\)\([^]*[[:graph:]]\)\?\([^[:alnum:]]\)/\1\2\3\4/g
+/[^]*/ {
+	s/\(^\|[^[:alnum:]:;}_]\)\(\?[[:graph:]]\)\([^]*[[:graph:]]\)\?\(\?[^[:alnum:]]\)/\1\2\3\4/g
 }
 #
 :print
@@ -1750,6 +1754,7 @@ s//[[/g
 s//]]/g
 s///g
 s//`/g
+s///g
 h
 x
 # remove the indicator that says: "previous line included /^+$/"
