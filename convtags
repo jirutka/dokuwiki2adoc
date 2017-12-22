@@ -1719,22 +1719,18 @@ s/$\$/+++$$+++/g
 #
 # Replace unconstrained marks with constrained
 # ============================================
-# Tentatively replace beginning of line with ^Q.
-s/^//
 # **bold** to *bold*
 /[^]*[^[:alnum:]:;}_*]\*\*[^*]*\*\*/ !{
-	s/\([^[:alnum:]:;}_*]\)\*\*\([^*[:blank:]]\)\([^*]*[^*[:blank:]]\)\?\*\*\([^*[:alnum:]]\)/\1*\2\3*\4/g
+	s/\(^\|[^[:alnum:]:;}_*]\)\*\*\([^*[:blank:]]\)\([^*]*[^*[:blank:]]\)\?\*\*\([^*[:alnum:]]\)/\1*\2\3*\4/g
 }
 # __italic__ to _italic_
 /[^]*[^[:alnum:]:;}_]__[^_]*__/ !{
-	s/\([^[:alnum:]:;}_]\)__\([^_[:blank:]]\)\([^_]*[^_[:blank:]]\)\?__\([^_[:alnum:]]\)/\1_\2\3_\4/g
+	s/\(^\|[^[:alnum:]:;}_]\)__\([^_[:blank:]]\)\([^_]*[^_[:blank:]]\)\?__\([^_[:alnum:]]\)/\1_\2\3_\4/g
 }
 # ``mono-spaced`` to `mono-spaced`
 /[^]*[^[:alnum:]:;}_][^]*/ !{
-	s/\([^[:alnum:]:;}_]\)\([[:graph:]]\)\([^]*[[:graph:]]\)\?\([^[:alnum:]]\)/\1\2\3\4/g
+	s/\(^\|[^[:alnum:]:;}_]\)\([[:graph:]]\)\([^]*[[:graph:]]\)\?\([^[:alnum:]]\)/\1\2\3\4/g
 }
-# Remove tentative indicator of beginning of line.
-s///
 #
 :print
 # Finish to convert the lists, revert tentative substitutions. 
