@@ -1298,14 +1298,14 @@ s@^ *\([hf]t\{1,2\}ps\?:[^]*\)@\1@g
 	# 
 	# We remove aligning spaces, and spaces before }}
 	# We also isolate the pattern {{..}} that we are processing
-	s@{{  *\([^|} ]*\)  *|\([^}]*\) *}}@\1["\2",align="center"]@
-	s@{{\([^|} ]*\)  *|\([^}]*\) *}}@\1["\2",align="left"]@
-	s@{{  *\([^|} ]*\)|\([^}]*\) *}}@\1["\2",float="right"]@
-	s@{{\([^|} ]*\)|\([^}]*\) *}}@\1["\2"]@
-	s@{{  *\([^|}]*\)  *}}@\1[align="center"]@
-	s@{{\([^|} ]*\)  *}}@\1[align="left"]@
-	s@{{  *\([^|} ]*\)}}@\1[float="right"]@
-	s@{{\([^|} ]*\)}}@\1[""]@
+	//! s@{{  *\([^|} ]*\)  *|\([^}]*\) *}}@\1["\2",align="center"]@
+	//! s@{{\([^|} ]*\)  *|\([^}]*\) *}}@\1["\2",align="left"]@
+	//! s@{{  *\([^|} ]*\)|\([^}]*\) *}}@\1["\2",float="right"]@
+	//! s@{{\([^|} ]*\)|\([^}]*\) *}}@\1["\2"]@
+	//! s@{{  *\([^|}]*\)  *}}@\1[align="center"]@
+	//! s@{{\([^|} ]*\)  *}}@\1[align="left"]@
+	//! s@{{  *\([^|} ]*\)}}@\1[float="right"]@
+	//! s@{{\([^|} ]*\)}}@\1[""]@
 	# linking
 	# Replace ":" (namespace separator) in links with "/", except external
 	# media files (containing "//" (^W).
@@ -1339,19 +1339,19 @@ s@^ *\([hf]t\{1,2\}ps\?:[^]*\)@\1@g
 		s@\([^[]*\)linkonly@\1@
 	}
 	# Dimensions
-	/[^[]*[&?]0x[[:digit:]]\+/ {
+	/[^[]*[&?]0x[[:digit:]]\+[^]*/ {
 		s@[^[]*[&?]0x\([[:digit:]]\+\)[^]]*@&,height="\1"@
 		s@\([^[]*[&?]\)0x[[:digit:]]\+@\1@
 	}
-	/[^[]*[&?][[:digit:]]\+x[[:digit:]]\+/ {
+	/[^[]*[&?][[:digit:]]\+x[[:digit:]]\+[^]*/ {
 		s@[^[]*[&?]\([[:digit:]]\+\)x\([[:digit:]]\+\)[^]]*@&,width="\1",height="\2"@
 		s@\([^[]*[&?]\)[[:digit:]]\+x[[:digit:]]\+@\1@
 	}
-	/[^[]*[&?][^x=[]*[[:digit:]]\+/ {
+	/[^[]*[&?][^x=[]*[[:digit:]]\+[^]*/ {
 		s@[^[]*[&?][^x[:digit:][]*\([[:digit:]]\+\)[^]]*@&,width="\1"@
 	}
 	# Image
-	/[^?[]*IMAGE_FILE_PATT[?[]/I {
+	/[^?[]*IMAGE_FILE_PATT[?[][^]*/I {
 		# remove empty alt text
 		s/\([^]*\)\("",\?\)/\1/g
 		# Use block image if there's nothing else on the line,
@@ -1365,9 +1365,9 @@ s@^ *\([hf]t\{1,2\}ps\?:[^]*\)@\1@g
 		}
 	}
 	# Other media
-	/[^?[]*IMAGE_FILE_PATT[?[]/I !{
+	/[^?[]*IMAGE_FILE_PATT[?[][^]*/I !{
 		# If title is empty, use file name (not complete path) as the title.
-		/[^[]\+\[""/ {
+		/[^[]\+\[""[^]*/ {
 			s@\([^/ ]\+\)\[""\([^]]*\]\)@\1["\1"\2@
 		}
 		s@/\?\([^?[]\+\)[?]*[^[]*\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
