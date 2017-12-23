@@ -94,6 +94,27 @@ SED=${SED:-sed}
 
 set -eu
 
+# Sed commands for polishing the output.
+FINALIZE_SED=$(cat <<'__EOF__'
+	# Remove leading empty lines.
+	/./,$!d
+	# Squeez empty lines and remove trailing empty lines.
+	/^$/ !{
+		x
+		/\n/ {
+			s/^\n//
+			# Squeez 2+ empty lines into 2.
+			s/\n\{2,\}/\n/
+			p
+			s/.*//
+		}
+		x
+		p
+	}
+	/^$/H
+__EOF__
+)
+
 # Gather the settings in the configuration file if provided by the user.
 # The settings in that file override those above.
 if [ "$CONFIGFILE" ]; then
@@ -148,15 +169,16 @@ dw2adoc() {
 	DKROOT="$(echo ${DKROOT%/}/ | $SED s.//..)"
 	DKIMAGES="$(echo ${DKIMAGES%/}/ | $SED s.//..)"
 
-	$SED -n -e "$(< "$0" $SED -n "/^#@part2@/,/^#@EOF@/p" \
-		| $SED "sDKROOT$DKROOTg" \
-		| $SED "sDKIMAGES$DKIMAGESg" \
-		| $SED "sLS_QUOTE$LS_QUOTEg" \
-		| $SED "sRS_QUOTE$RS_QUOTEg" \
-		| $SED "sLD_QUOTE$LD_QUOTEg" \
-		| $SED "sRD_QUOTE$RD_QUOTEg" \
-		| $SED "sIMAGE_FILE_PATT$IMAGE_FILE_PATTg")" \
-		"$asciidoc_tmp" > "$2"
+	$SED -ne "$(< "$0" $SED -n "/^#@part2@/,/^#@EOF@/p" \
+			| $SED "sDKROOT$DKROOTg" \
+			| $SED "sDKIMAGES$DKIMAGESg" \
+			| $SED "sLS_QUOTE$LS_QUOTEg" \
+			| $SED "sRS_QUOTE$RS_QUOTEg" \
+			| $SED "sLD_QUOTE$LD_QUOTEg" \
+			| $SED "sRD_QUOTE$RD_QUOTEg" \
+			| $SED "sIMAGE_FILE_PATT$IMAGE_FILE_PATTg")" \
+		"$asciidoc_tmp" \
+			| $SED -ne "$FINALIZE_SED" > "$2"
 
 	DKROOT="$(echo ${DKROOT%/}/ | $SED s..//.)"
 	DKIMAGES="$(echo ${DKIMAGES%/}/ | $SED s..//.)"
