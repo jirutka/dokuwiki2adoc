@@ -1145,6 +1145,33 @@ s/\]]//g
 		b print
 	}
 }
+# Prevent expansion of an include macro inside an AsciiDoc Delimited block.
+/[]/ {
+	s/^include::/\\&/
+}
+# Get rid of the Code blocks, converted to Listing blocks: skip parsing
+# their content.
+// {
+	\@</code>@ {
+		s///
+		s@</code>@----@
+		b print
+	}
+	\@</code>@ !{
+		b print
+	}
+}
+	
+// {
+	\@</file>@ {
+		s///
+		s@</file>@----@
+		b print
+	}
+	\@</file>@ !{
+		b print
+	}
+}
 # Escape existing  [<text>] that should not be parsed in AsciiDoc.
 # We do that before any conversion that would lead to [<text>] that
 # should be parsed, like [source] or [verse]
@@ -1153,33 +1180,8 @@ s/\]]//g
 # "no formatting" opening or closing tags that are converted to ++.
 # NOTE: I'm not sure if this reasoning is still valid after changing
 # $[[ and ]]$$ to ++[++ and ++]++. ~JJ
-/[]/ !{
-	s/\[//g
-	s/]//g
-}
-# Prevent expansion of an include macro inside an AsciiDoc Delimited block.
-/[]/ {
-	s/^include::/\\&/
-}
-# Get rid of the Code blocks, converted to Listing blocks: skip parsing
-# their content.
-// {
-	\.</code>. {
-		s///
-		s@</code>@----@
-		b print
-	}
-	\.</code>. !b print
-}
-	
-// {
-	\.</file>. {
-		s///
-		s@</file>@----@
-		b print
-	}
-	\.</file>. !b print
-}
+s/\[//g
+s/]//g
 # HTML comments. These comments are provided by the html comment plug-in
 # for DokuWiki, see https://www.dokuwiki.org/plugin:htmlcomment
 / *<!--.*-->/ {
