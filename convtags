@@ -509,234 +509,205 @@ s|<file [[:alpha:]]*>|&|g
 #
 # outside a list item
 # -------------------
-#
-# Closing tags
-# We put the closing tags before the opening ones, else in
-# case of a pattern like the following in a single line:
-# ^</code> ... <code>$
-# the <code> tag would not be converted. This case is unlikely outside
-# a list items, but who knows?
-#
 // ! {
-	# Do not allow a forced line break after a closing tag.
-	s@^\(</code>\) *[\][\] *@\1@
-	s@\([^]*</code>\) *[\][\] *@\1@
-	s@^</code> *@</code>\n@
-	# Begins a line.
-	s@^</code>\([[:print:]]\)@</code>\n\1@
-	# Ends a line
-	s@\([^]*[[:print:]]\)</code> *@\1\n</code>@
-	# Inside a line
-	s@\([^]*[[:print:]]\)</code>\([[:print:]]\)@\1\n</code>\n\2@
-}
-// ! {
-	# Do not allow a forced line break after a closing tag.
-	s@^\(</file>\) *[\][\] *@\1@
-	s@\([^]*</file>\) *[\][\] *@\1@
-	s@^</file> *@</file>\n@
-	# Begins a line.
-	s@^</file>\([[:print:]]\)@</file>\n\1@
-	# Ends a line
-	s@\([^]*[[:print:]]\)</file> *@\1\n</file>@
-	# Inside a line
-	s@\([^]*[[:print:]]\)</file>\([[:print:]]\)@\1\n</file>\n\2@
-}
-#
-# Opening tags
-#
-// !{
-	/[][^]*<code>/ !{
-		/[^]*<code>/ !{
-			// ! {
-				# If there are only spaces after the mark, discard them.
-				s/<code> */<code>/
-				# In its own line.
-				s/^<code>/<code>/
-				# Begins a line 
-				s/^<code>\([[:print:]]\)/<code>\n\1/
-				# Ends a line. If we are in a list item, it continues.
-				s/<code> */\n<code>/
-				# Inside a line.
-				s/\([[:print:]]\)<code>\([[:print:]]\)/\1\n<code>\n\2/
-			}
+	#
+	# Closing tags
+	# We put the closing tags before the opening ones, else in
+	# case of a pattern like the following in a single line:
+	# ^</code> ... <code>$
+	# the <code> tag would not be converted. This case is unlikely outside
+	# a list items, but who knows?
+	#
+	\@</code>@ {
+		# Do not allow a forced line break after a closing tag.
+		s@^\(</code>\) *[\][\] *@\1@
+		s@\([^]*</code>\) *[\][\] *@\1@
+		s@^</code> *@</code>\n@
+		# Begins a line.
+		s@^</code>\([[:print:]]\)@</code>\n\1@
+		# Ends a line
+		s@\([^]*[[:print:]]\)</code> *@\1\n</code>@
+		# Inside a line
+		s@\([^]*[[:print:]]\)</code>\([[:print:]]\)@\1\n</code>\n\2@
+	}
+	\@</file>@ {
+		# Do not allow a forced line break after a closing tag.
+		s@^\(</file>\) *[\][\] *@\1@
+		s@\([^]*</file>\) *[\][\] *@\1@
+		s@^</file> *@</file>\n@
+		# Begins a line.
+		s@^</file>\([[:print:]]\)@</file>\n\1@
+		# Ends a line
+		s@\([^]*[[:print:]]\)</file> *@\1\n</file>@
+		# Inside a line
+		s@\([^]*[[:print:]]\)</file>\([[:print:]]\)@\1\n</file>\n\2@
+	}
+	#
+	# Opening tags
+	#
+	/<code>/ {
+		/[][^]*<code>/ !{
+			# If there are only spaces after the mark, discard them.
+			s/<code> */<code>/
+			# In its own line.
+			s/^<code>/<code>/
+			# Begins a line
+			s/^<code>\([[:print:]]\)/<code>\n\1/
+			# Ends a line. If we are in a list item, it continues.
+			s/<code> */\n<code>/
+			# Inside a line.
+			s/\([[:print:]]\)<code>\([[:print:]]\)/\1\n<code>\n\2/
 		}
 	}
-}
-# Highlighted source code
-# We don't convert the "download-able code snippet" feature, hence
-# restrict what goes after "< code" to alphabetic characters.
-#
-// !{
-	/[][^]*<code \([[:alpha:]]*\)>/ !{
-		/[^]*<code \([[:alpha:]]*\)>/ !{
-			// ! {
-				s/<code [-.] *[^<]*>/<code txt>/g
-				# Remove links to download-able code blocks
-				s/<code \([[:alpha:]]*\) [^>]*>/<code \1>/
-				# If there are only spaces after the mark, discard them.
-				s/\(<code [[:alpha:]]*>\) */\1/
-				# In its own line.
-				s/^<code \([[:alpha:]]*\)>/[source,\1]\n<code>/
-				# Begins a line 
-				s/^<code \([[:alpha:]]*\)>\([[:print:]]\)/[source,\1]\n<code>\n\2/
-				# Ends a line. If we are in a list item, it continues.
-				s/<code \([[:alpha:]]*\)> */\n[source,\1]\n<code>/
-				# Inside a line.
-				s/\([[:print:]]\)<code \([[:alpha:]]*\)>\([[:print:]]\)/\1\n[source,\2]\n<code>\n\3/
-			}
+	# Highlighted source code
+	# We don't convert the "download-able code snippet" feature, hence
+	# restrict what goes after "< code" to alphabetic characters.
+	/<code [[:alpha:]]*>/ {
+		/[][^]*<code \([[:alpha:]]*\)>/ !{
+			s/<code [-.] *[^<]*>/<code txt>/g
+			# Remove links to download-able code blocks
+			s/<code \([[:alpha:]]*\) [^>]*>/<code \1>/
+			# If there are only spaces after the mark, discard them.
+			s/\(<code [[:alpha:]]*>\) */\1/
+			# In its own line.
+			s/^<code \([[:alpha:]]*\)>/[source,\1]\n<code>/
+			# Begins a line
+			s/^<code \([[:alpha:]]*\)>\([[:print:]]\)/[source,\1]\n<code>\n\2/
+			# Ends a line. If we are in a list item, it continues.
+			s/<code \([[:alpha:]]*\)> */\n[source,\1]\n<code>/
+			# Inside a line.
+			s/\([[:print:]]\)<code \([[:alpha:]]*\)>\([[:print:]]\)/\1\n[source,\2]\n<code>\n\3/
 		}
 	}
-}
-// !{
-	/[][^]*<file>/ !{
-		/[^]*<file>/ !{
-			// ! {
-				# If there are only spaces after the mark, discard them.
-				s/<file> */<file>/
-				# In its own line.
-				s/^<file>/<file>/
-				# Begins a line 
-				s/^<file>\([[:print:]]\)/<file>\n\1/
-				# Inside a line.
-				s/\([[:print:]]\)<file>\([[:print:]]\)/\1\n<file>\n\2/
-				# Ends a line. If we are in a list item, it continues.
-				s/<file>/\n<file>/
-			}
+	/<file>/ {
+		/[][^]*<file>/ !{
+			# If there are only spaces after the mark, discard them.
+			s/<file> */<file>/
+			# In its own line.
+			s/^<file>/<file>/
+			# Begins a line
+			s/^<file>\([[:print:]]\)/<file>\n\1/
+			# Inside a line.
+			s/\([[:print:]]\)<file>\([[:print:]]\)/\1\n<file>\n\2/
+			# Ends a line. If we are in a list item, it continues.
+			s/<file>/\n<file>/
 		}
 	}
-}
-# Highlighted source code
-# We don't convert the "download-able file snippet" feature, hence
-# restrict what goes after "< file" to alphabetic characters.
-// !{
-	/[][^]*<file \([[:alpha:]]*\)>/ !{
-		/[^]*<file \([[:alpha:]]*\)>/ !{
-			// ! {
-				s/<file [-.] *[^<]*>/<file txt>/g
-				# Remove links to down-loadable code blocks
-				s/<file \([[:alpha:]]*\) [^>]*>/<file \1>/
-				# If there are only spaces after the mark, discard them.
-				s/\(<file [[:alpha:]]*>\) */\1/
-				# In its own line.
-				s/^<file \([[:alpha:]]*\)>/[source,\1]\n<file>/
-				# Begins a line 
-				s/^<file \([[:alpha:]]*\)>\([[:print:]]\)/[source,\1]\n<file>\n\2/
-				# Inside a line.
-				s/\([[:print:]]\)<file \([[:alpha:]]*\)>\([[:print:]]\)/\1\n[source,\2]\n<file>\n\3/
-				# Ends a line. If we are in a list item, it continues.
-				s/<file \([[:alpha:]]*\)>/\n[source,\1]\n<file>/
-			}
+	# Highlighted source code
+	# We don't convert the "download-able file snippet" feature, hence
+	# restrict what goes after "< file" to alphabetic characters.
+	/<file [[:alpha:]]>/ {
+		/[][^]*<file \([[:alpha:]]*\)>/ !{
+			s/<file [-.] *[^<]*>/<file txt>/g
+			# Remove links to down-loadable code blocks
+			s/<file \([[:alpha:]]*\) [^>]*>/<file \1>/
+			# If there are only spaces after the mark, discard them.
+			s/\(<file [[:alpha:]]*>\) */\1/
+			# In its own line.
+			s/^<file \([[:alpha:]]*\)>/[source,\1]\n<file>/
+			# Begins a line
+			s/^<file \([[:alpha:]]*\)>\([[:print:]]\)/[source,\1]\n<file>\n\2/
+			# Inside a line.
+			s/\([[:print:]]\)<file \([[:alpha:]]*\)>\([[:print:]]\)/\1\n[source,\2]\n<file>\n\3/
+			# Ends a line. If we are in a list item, it continues.
+			s/<file \([[:alpha:]]*\)>/\n[source,\1]\n<file>/
 		}
 	}
 }
 #
 # Code blocks inside a list item
 # ==============================
-#
-# Closing tags
-#
-# In this case we put the closing tags before the opening ones, else in
-# case of a pattern like the following in a single line:
-# ^</code> ... <code>$
-# the <code> tag would not be converted.
-#
 // {
-	# Do not allow a forced line break after a closing tag or at EOL
-	s@^\(</code>\) *[\][\] *@\1@
-	s@^\(</code>.*\)[\][\]@\1@
-	s@\([^]*</code>\) *[\][\] *@\1@
-	# In its own line
-	s@^</code> *@</code>\n+@
-	# Begins a line.
-	s@^</code>\([[:print:]]\)@</code>\n+\n\1@
-	# Ends a line
-	s@\([^]*[[:print:]]\)</code> *@\1\n</code>\n+@
-	# Inside a line
-	s@\([^]*[[:print:]]\)</code>\([[:print:]]\)@\1\n</code>\n+\n\2@
-}
-// {
-	# Do not allow a forced line break after a closing tag or at EOL.
-	s@^\(</file>\) *[\][\] *@\1@
-	s@^\(</file>.*\)[\][\]@\1@
-	s@\([^]*</file>\) *[\][\] *@\1@
-	# In its own line
-	s@^</file> *@</file>\n+@
-	# Begins a line.
-	s@^</file>\([[:print:]]\)@</file>\n+\n\1@
-	# Ends a line
-	s@\([^]*[[:print:]]\)</file> *@\1\n</file>\n+@
-	# Inside a line
-	s@\([^]*[[:print:]]\)</file>\([[:print:]]\)@\1\n</file>\n+\n\2@
-}
-# opening tags
-#
-// !{
-	/[][^]*<code>/ !{
-		/[^]*<code>/ !{
-			// {
-				# If there are only spaces after the mark, discard them.
-				s/<code> */<code>/
-				# Inside a line.
-				s/\([[:print:]]\)<code>\([[:print:]]\)/\1\n+\n<code>\n\2/
-				# Ends a line. If we are in a list item, it continues.
-				s/<code>/\n+\n<code>/
-			}
+	#
+	# Closing tags
+	#
+	# In this case we put the closing tags before the opening ones, else in
+	# case of a pattern like the following in a single line:
+	# ^</code> ... <code>$
+	# the <code> tag would not be converted.
+	#
+	\@</code>@ {
+		# Do not allow a forced line break after a closing tag or at EOL
+		s@^\(</code>\) *[\][\] *@\1@
+		s@^\(</code>.*\)[\][\]@\1@
+		s@\([^]*</code>\) *[\][\] *@\1@
+		# In its own line
+		s@^</code> *@</code>\n+@
+		# Begins a line.
+		s@^</code>\([[:print:]]\)@</code>\n+\n\1@
+		# Ends a line
+		s@\([^]*[[:print:]]\)</code> *@\1\n</code>\n+@
+		# Inside a line
+		s@\([^]*[[:print:]]\)</code>\([[:print:]]\)@\1\n</code>\n+\n\2@
+	}
+	\@</file>@ {
+		# Do not allow a forced line break after a closing tag or at EOL.
+		s@^\(</file>\) *[\][\] *@\1@
+		s@^\(</file>.*\)[\][\]@\1@
+		s@\([^]*</file>\) *[\][\] *@\1@
+		# In its own line
+		s@^</file> *@</file>\n+@
+		# Begins a line.
+		s@^</file>\([[:print:]]\)@</file>\n+\n\1@
+		# Ends a line
+		s@\([^]*[[:print:]]\)</file> *@\1\n</file>\n+@
+		# Inside a line
+		s@\([^]*[[:print:]]\)</file>\([[:print:]]\)@\1\n</file>\n+\n\2@
+	}
+	#
+	# opening tags
+	#
+	/<code>/ {
+		/[][^]*<code>/ !{
+			# If there are only spaces after the mark, discard them.
+			s/<code> */<code>/
+			# Inside a line.
+			s/\([[:print:]]\)<code>\([[:print:]]\)/\1\n+\n<code>\n\2/
+			# Ends a line. If we are in a list item, it continues.
+			s/<code>/\n+\n<code>/
 		}
 	}
-}
-# Highlighted source code
-# We don't convert the "download-able code snippet" feature, hence
-# restrict what goes after "< code" to alphabetic characters.
-#
-// !{
-	/[][^]*<code \([[:alpha:]]*\)>/ !{
-		/[^]*<code \([[:alpha:]]*\)>/ !{
-			// {
-				s/<code [-.] *[^<]*>/<code txt>/g
-				# Remove links to download-able code blocks
-				s/<code \([[:alpha:]]*\) [^>]*>/<code \1>/
-				# If there are only spaces after the mark, discard them.
-				s/\(<code [[:alpha:]]*>\) */\1/
-				# Inside a line.
-				s/\([[:print:]]\)<code \([[:alpha:]]*\)>\([[:print:]]\)/\1\n+\n[source,\2]\n<code>\n\3/
-				# Ends a line. If we are in a list item, it continues.
-				s/<code \([[:alpha:]]*\)>/\n+\n[source,\1]\n<code>/
-			}
+	# Highlighted source code
+	# We don't convert the "download-able code snippet" feature, hence
+	# restrict what goes after "< code" to alphabetic characters.
+	/<code [[:alpha:]]*>/ {
+		/[][^]*<code \([[:alpha:]]*\)>/ !{
+			s/<code [-.] *[^<]*>/<code txt>/g
+			# Remove links to download-able code blocks
+			s/<code \([[:alpha:]]*\) [^>]*>/<code \1>/
+			# If there are only spaces after the mark, discard them.
+			s/\(<code [[:alpha:]]*>\) */\1/
+			# Inside a line.
+			s/\([[:print:]]\)<code \([[:alpha:]]*\)>\([[:print:]]\)/\1\n+\n[source,\2]\n<code>\n\3/
+			# Ends a line. If we are in a list item, it continues.
+			s/<code \([[:alpha:]]*\)>/\n+\n[source,\1]\n<code>/
 		}
 	}
-}
-// !{
-	/[][^]*<file>/ !{
-		/[^]*<file>/ !{
-			// {
-				# If there are only spaces after the mark, discard them.
-				s/<file> */<file>/
-				s/^<file>\([[:print:]]\)/<file>\n\1/
-				# Inside a line.
-				s/\([[:print:]]\)<file>\([[:print:]]\)/\1\n+\n<file>\n\2/
-				# Ends a line. If we are in a list item, it continues.
-				s/<file>/\n+\n<file>/ # No need to insert a <newline> before?
-			}
+	/<file>/ {
+		/[][^]*<file>/ !{
+			# If there are only spaces after the mark, discard them.
+			s/<file> */<file>/
+			s/^<file>\([[:print:]]\)/<file>\n\1/
+			# Inside a line.
+			s/\([[:print:]]\)<file>\([[:print:]]\)/\1\n+\n<file>\n\2/
+			# Ends a line. If we are in a list item, it continues.
+			s/<file>/\n+\n<file>/ # No need to insert a <newline> before?
 		}
 	}
-}
-# Highlighted source code
-# We don't convert the "download-able file snippet" feature, hence
-# restrict what goes after "< file" to alphabetic characters.
-// !{
-	/[][^]*<file \([[:alpha:]]*\)>/ !{
-		/[^]*<file \([[:alpha:]]*\)>/ !{
-			// {
-				s/<file [-.] *[^<]*>/<file txt>/g
-				# Remove links to download-able code blocks
-				s/<file \([[:alpha:]]*\) [^>]*>/<file \1>/
-				# If there are only spaces after the mark, discard them.
-				s/\(<file [[:alpha:]]*>\) */\1/
-				# Inside a line.
-				s/\([[:print:]]\)<file \([[:alpha:]]*\)>\([[:print:]]\)/\1\n+\n[source,\2]\n<file>\n\3/
-				# Ends a line. If we are in a list item, it continues.
-				s/<file \([[:alpha:]]*\)>/\n+\n[source,\1]\n<file>/
-			}
+	# Highlighted source code
+	# We don't convert the "download-able file snippet" feature, hence
+	# restrict what goes after "< file" to alphabetic characters.
+	/<file [[:alpha:]]>/ {
+		/[][^]*<file \([[:alpha:]]*\)>/ !{
+			s/<file [-.] *[^<]*>/<file txt>/g
+			# Remove links to download-able code blocks
+			s/<file \([[:alpha:]]*\) [^>]*>/<file \1>/
+			# If there are only spaces after the mark, discard them.
+			s/\(<file [[:alpha:]]*>\) */\1/
+			# Inside a line.
+			s/\([[:print:]]\)<file \([[:alpha:]]*\)>\([[:print:]]\)/\1\n+\n[source,\2]\n<file>\n\3/
+			# Ends a line. If we are in a list item, it continues.
+			s/<file \([[:alpha:]]*\)>/\n+\n[source,\1]\n<file>/
 		}
 	}
 }
