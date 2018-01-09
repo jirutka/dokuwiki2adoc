@@ -794,10 +794,10 @@ t codes
 	# And inside this line "escape" the <code[^]]*> and </code> and
 	# <file[^]]*> and </file> so they be not considered as such in the
 	# second part.
-	s@<code[^>]*>@<code[^>]*>@g
-	s@</code>@<code>@g
-	s@<file[^>]*>@<file[^>]*>@g
-	s@</file>@<file>@g
+	s@<code\([^>]*>\)@<code\1@g
+	s@</code>@</code>@g
+	s@<file\([^>]*>\)@<file\1@g
+	s@</file>@</file>@g
 	# And also escape "----" that ends an AsciiDoc Listing block.
 	s@^----@----@
 }
