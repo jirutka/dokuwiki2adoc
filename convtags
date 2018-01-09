@@ -798,6 +798,8 @@ t codes
 	s@</code>@<code>@g
 	s@<file[^>]*>@<file[^>]*>@g
 	s@</file>@<file>@g
+	# And also escape "----" that ends an AsciiDoc Listing block.
+	s@^----@----@
 }
 #
 # Preformatted text ?
