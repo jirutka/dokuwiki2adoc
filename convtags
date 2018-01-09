@@ -261,16 +261,18 @@ exit
 # 06  list item that can continue on the next line
 # 07  %% preceding the text not to be parsed (as <nowiki>)
 # 08  %% following the text not to be parsed (as </nowiki>)
+# 0B  to mark tags that have a special meaning in DokuWiki syntax
+# 0C  local tentative replacement
 # 0E  ends a <code>... or <file>... block or of a code block whose
 #         lines begin with two spaces
-# 10  ends a <nowiki> ... </nowiki>
+# 10  local tentative replacement
 # 11  %% in case of an odd number of this pattern in a line
 # 12  Local tentative replacement
 # 12  Local tentative replacement
 # 14  indicates a blank line so we know that the previous was blank
 # 15  separator, replaced by a zero width space U+200B at end of script
 # 16  marks the beginning of the remaining part of the line where we
-#         still have to look for "no formatting" areas.
+#         still have to look for substitutions.
 # 1A  begins a <note[^<]*> ... </note> area
 # 1C  tentatively replaces /^  / in a preformatted block.
 # We have to deal with DokuWiki' syntax, that:
@@ -307,53 +309,82 @@ exit
 # delimited  block.
 // {s///;s/^//}
 // {s///;s/^//}
-#
-# No WiKi ?
+
+# Mark tags
 # =========
-#
-# But in a Code block we find and mark the "nowiki" areas.
-#
-/[]/ !{
-	s/^//
-	s/<nowiki>//g
-	s@</nowiki>@@g
-	s/%%//g
-	:noformat
-	# Convert the next %% (was ) if not preceded by <nowiki> (was ).
-	/[^]*[^]*/ {
-		# then find the next ex 
-		s/\([^]*[^]*\)/\1/
-		# move the  after the  closing tag.
-		s/\([^]*\)/\1/
-		# Convert back the   and  inside that area.
-		:a
-		s/\(.*\)\(.*\)/\1<nowiki>\2/
-		s@\(.*\)\(.*\)@\1</nowiki>\2@
-		ta
-		s///
-		t noformat
+# Mark sequences that have a special meaning in DokuWiki syntax.
+s|%%|&|g
+s|</\?nowiki>|&|g
+s|</\?code>|&|g
+s|</\?file>|&|g
+s|<code [[:alpha:]]*>|&|g
+s|<file [[:alpha:]]*>|&|g
+
+# Unmark tags inside blocks.
+// {
+	# Tentatively replace closing tags.
+	s|%%||g
+	s|</nowiki>||g
+	s|</code>||g
+	s|</file>||g
+
+	# The following substitutions are repeated until whole line is processed.
+	# Symbol 16 () is moved after each substitution to denote part of the
+	# line that has been already processed
+	s|^||
+	:unmark-blocks
+
+	# If we're in a code/file block opened on some previous line...
+	/^/ b unmark-code
+	/^/ b unmark-file
+	# Remove special mark inside <code[^>]*>...</code>.
+	/[^]*<code[^>]*>/ {
+		s/\([^]*<code[^>]*>\)/\1/  # first move  behind <code>
+		:unmark-code
+		s/\([^]*\)\([^]\)/\1\2/  # remove all  until </code>
+		t unmark-code
+		s/\([^]*\)/\1/  # move  behind </code>
 	}
-	# Convert the next <nowiki> (was ) if not preceded by %% (was ).
-	/[^]*[^]*/ {
-		s/\([^]*\)/\1/
-		:b
-		s/\(.*\)\(.*\)/\1%%\2/
-		tb
-		s///
-		t noformat
+	# Remove special mark inside <file[^>]*>...</file>.
+	/[^]*<file[^>]*>/ {
+		s/\([^]*<file[^>]*>\)/\1/  # first move  behind <file>
+		:unmark-file
+		s/\([^]*\)\([^]\)/\1\2/  # remove all  until </file>
+		t unmark-file
+		s/\([^]*\)/\1/  # move  behind </file>
 	}
-	# standardize: all nowiki areas will become  ...  from now on.
-	s/\([^]*\)/\1/g
-	s/\([^]*\)/\1/g
-	# Convert back the remaining tags.
-	s//%%/g
-	s//%%/g
-	s//<nowiki>/g
-	s@@</nowiki>@g
-	s///g
-	s///g
-	s///
+	# Remove special mark inside <nowiki>...</nowiki>
+	/[^]*<nowiki>/ {
+		s/\([^]*<nowiki>\)/\1/  # first move  behind <nowiki>
+		:unmark-nowiki
+		s/\([^]*\)\([^]\)/\1\2/  # remove all  until </nowiki>
+		t unmark-nowiki
+		s/\([^]*\)/\1/  # move  behind </nowiki>
+	}
+	# Remove special mark inside %%...%%.
+	/[^]*/ {
+		s/\([^]*\)/\1/  # first move  behind %%
+		:unmark-%%
+		s/\([^]*\)\([^]\)/\1\2/  # remove all  until %%
+		t unmark-%%
+		s/\([^]*\)/\1/  # move  behind %%
+	}
+	# Repeat if there's some remaining marked tag after the pointer ().
+	/.*/ t unmark-blocks
+
+	s|||g
+	# Replace <nowiki> with  and </nowiki> with .
+	s|<nowiki>||g
+	s|||g
+	# Replace %%...%% with ....
+	s|\([^]*\)|\1|g
+	# Revert tentative substitutions.
+	s||%%|g
+	s||</nowiki>|g
+	s||</code>|g
+	s||</file>|g
 }
+
 :begin
 #
 # Lists
@@ -379,8 +410,8 @@ exit
 	 # doesn't close the item.
 	/^\(   *\)\{1,5\}[*][^*]/ !{
 		/^\(   *\)\{1,5\}-[^-]/ !{
-			\.^</code>. !{
-				\.^</file>. !{
+			\.^</code>. !{
+				\.^</file>. !{
 					s///
 				}
 			}
@@ -487,45 +518,45 @@ exit
 #
 // ! {
 	# Do not allow a forced line break after a closing tag.
-	s@^\(</code>\) *[\][\] *@\1@
-	s@\([^]*</code>\) *[\][\] *@\1@
-	s@^</code> *@</code>\n@
+	s@^\(</code>\) *[\][\] *@\1@
+	s@\([^]*</code>\) *[\][\] *@\1@
+	s@^</code> *@</code>\n@
 	# Begins a line.
-	s@^</code>\([[:print:]]\)@</code>\n\1@
+	s@^</code>\([[:print:]]\)@</code>\n\1@
 	# Ends a line
-	s@\([^]*[[:print:]]\)</code> *@\1\n</code>@
+	s@\([^]*[[:print:]]\)</code> *@\1\n</code>@
 	# Inside a line
-	s@\([^]*[[:print:]]\)</code>\([[:print:]]\)@\1\n</code>\n\2@
+	s@\([^]*[[:print:]]\)</code>\([[:print:]]\)@\1\n</code>\n\2@
 }
 // ! {
 	# Do not allow a forced line break after a closing tag.
-	s@^\(</file>\) *[\][\] *@\1@
-	s@\([^]*</file>\) *[\][\] *@\1@
-	s@^</file> *@</file>\n@
+	s@^\(</file>\) *[\][\] *@\1@
+	s@\([^]*</file>\) *[\][\] *@\1@
+	s@^</file> *@</file>\n@
 	# Begins a line.
-	s@^</file>\([[:print:]]\)@</file>\n\1@
+	s@^</file>\([[:print:]]\)@</file>\n\1@
 	# Ends a line
-	s@\([^]*[[:print:]]\)</file> *@\1\n</file>@
+	s@\([^]*[[:print:]]\)</file> *@\1\n</file>@
 	# Inside a line
-	s@\([^]*[[:print:]]\)</file>\([[:print:]]\)@\1\n</file>\n\2@
+	s@\([^]*[[:print:]]\)</file>\([[:print:]]\)@\1\n</file>\n\2@
 }
 #
 # Opening tags
 #
 // !{
-	/[][^]*<code>/ !{
-		/[^]*<code>/ !{
+	/[][^]*<code>/ !{
+		/[^]*<code>/ !{
 			// ! {
 				# If there are only spaces after the mark, discard them.
-				s/<code> */<code>/
+				s/<code> */<code>/
 				# In its own line.
-				s/^<code>/<code>/
+				s/^<code>/<code>/
 				# Begins a line 
-				s/^<code>\([[:print:]]\)/<code>\n\1/
+				s/^<code>\([[:print:]]\)/<code>\n\1/
 				# Ends a line. If we are in a list item, it continues.
-				s/<code> */\n<code>/
+				s/<code> */\n<code>/
 				# Inside a line.
-				s/\([[:print:]]\)<code>\([[:print:]]\)/\1\n<code>\n\2/
+				s/\([[:print:]]\)<code>\([[:print:]]\)/\1\n<code>\n\2/
 			}
 		}
 	}
@@ -535,40 +566,40 @@ exit
 # restrict what goes after "< code" to alphabetic characters.
 #
 // !{
-	/[][^]*<code \([[:alpha:]]*\)>/ !{
-		/[^]*<code \([[:alpha:]]*\)>/ !{
+	/[][^]*<code \([[:alpha:]]*\)>/ !{
+		/[^]*<code \([[:alpha:]]*\)>/ !{
 			// ! {
-				s/<code [-.] *[^<]*>/<code txt>/g
+				s/<code [-.] *[^<]*>/<code txt>/g
 				# Remove links to download-able code blocks
-				s/<code \([[:alpha:]]*\) [^>]*>/<code \1>/
+				s/<code \([[:alpha:]]*\) [^>]*>/<code \1>/
 				# If there are only spaces after the mark, discard them.
-				s/\(<code [[:alpha:]]*>\) */\1/
+				s/\(<code [[:alpha:]]*>\) */\1/
 				# In its own line.
-				s/^<code \([[:alpha:]]*\)>/[source,\1]\n<code>/
+				s/^<code \([[:alpha:]]*\)>/[source,\1]\n<code>/
 				# Begins a line 
-				s/^<code \([[:alpha:]]*\)>\([[:print:]]\)/[source,\1]\n<code>\n\2/
+				s/^<code \([[:alpha:]]*\)>\([[:print:]]\)/[source,\1]\n<code>\n\2/
 				# Ends a line. If we are in a list item, it continues.
-				s/<code \([[:alpha:]]*\)> */\n[source,\1]\n<code>/
+				s/<code \([[:alpha:]]*\)> */\n[source,\1]\n<code>/
 				# Inside a line.
-				s/\([[:print:]]\)<code \([[:alpha:]]*\)>\([[:print:]]\)/\1\n[source,\2]\n<code>\n\3/
+				s/\([[:print:]]\)<code \([[:alpha:]]*\)>\([[:print:]]\)/\1\n[source,\2]\n<code>\n\3/
 			}
 		}
 	}
 }
 // !{
-	/[][^]*<file>/ !{
-		/[^]*<file>/ !{
+	/[][^]*<file>/ !{
+		/[^]*<file>/ !{
 			// ! {
 				# If there are only spaces after the mark, discard them.
-				s/<file> */<file>/
+				s/<file> */<file>/
 				# In its own line.
-				s/^<file>/<file>/
+				s/^<file>/<file>/
 				# Begins a line 
-				s/^<file>\([[:print:]]\)/<file>\n\1/
+				s/^<file>\([[:print:]]\)/<file>\n\1/
 				# Inside a line.
-				s/\([[:print:]]\)<file>\([[:print:]]\)/\1\n<file>\n\2/
+				s/\([[:print:]]\)<file>\([[:print:]]\)/\1\n<file>\n\2/
 				# Ends a line. If we are in a list item, it continues.
-				s/<file>/\n<file>/
+				s/<file>/\n<file>/
 			}
 		}
 	}
@@ -577,22 +608,22 @@ exit
 # We don't convert the "download-able file snippet" feature, hence
 # restrict what goes after "< file" to alphabetic characters.
 // !{
-	/[][^]*<file \([[:alpha:]]*\)>/ !{
-		/[^]*<file \([[:alpha:]]*\)>/ !{
+	/[][^]*<file \([[:alpha:]]*\)>/ !{
+		/[^]*<file \([[:alpha:]]*\)>/ !{
 			// ! {
-				s/<file [-.] *[^<]*>/<file txt>/g
+				s/<file [-.] *[^<]*>/<file txt>/g
 				# Remove links to down-loadable code blocks
-				s/<file \([[:alpha:]]*\) [^>]*>/<file \1>/
+				s/<file \([[:alpha:]]*\) [^>]*>/<file \1>/
 				# If there are only spaces after the mark, discard them.
-				s/\(<file [[:alpha:]]*>\) */\1/
+				s/\(<file [[:alpha:]]*>\) */\1/
 				# In its own line.
-				s/^<file \([[:alpha:]]*\)>/[source,\1]\n<file>/
+				s/^<file \([[:alpha:]]*\)>/[source,\1]\n<file>/
 				# Begins a line 
-				s/^<file \([[:alpha:]]*\)>\([[:print:]]\)/[source,\1]\n<file>\n\2/
+				s/^<file \([[:alpha:]]*\)>\([[:print:]]\)/[source,\1]\n<file>\n\2/
 				# Inside a line.
-				s/\([[:print:]]\)<file \([[:alpha:]]*\)>\([[:print:]]\)/\1\n[source,\2]\n<file>\n\3/
+				s/\([[:print:]]\)<file \([[:alpha:]]*\)>\([[:print:]]\)/\1\n[source,\2]\n<file>\n\3/
 				# Ends a line. If we are in a list item, it continues.
-				s/<file \([[:alpha:]]*\)>/\n[source,\1]\n<file>/
+				s/<file \([[:alpha:]]*\)>/\n[source,\1]\n<file>/
 			}
 		}
 	}
@@ -610,44 +641,44 @@ exit
 #
 // {
 	# Do not allow a forced line break after a closing tag or at EOL
-	s@^\(</code>\) *[\][\] *@\1@
-	s@^\(</code>.*\)[\][\]@\1@
-	s@\([^]*</code>\) *[\][\] *@\1@
+	s@^\(</code>\) *[\][\] *@\1@
+	s@^\(</code>.*\)[\][\]@\1@
+	s@\([^]*</code>\) *[\][\] *@\1@
 	# In its own line
-	s@^</code> *@</code>\n+@
+	s@^</code> *@</code>\n+@
 	# Begins a line.
-	s@^</code>\([[:print:]]\)@</code>\n+\n\1@
+	s@^</code>\([[:print:]]\)@</code>\n+\n\1@
 	# Ends a line
-	s@\([^]*[[:print:]]\)</code> *@\1\n</code>\n+@
+	s@\([^]*[[:print:]]\)</code> *@\1\n</code>\n+@
 	# Inside a line
-	s@\([^]*[[:print:]]\)</code>\([[:print:]]\)@\1\n</code>\n+\n\2@
+	s@\([^]*[[:print:]]\)</code>\([[:print:]]\)@\1\n</code>\n+\n\2@
 }
 // {
 	# Do not allow a forced line break after a closing tag or at EOL.
-	s@^\(</file>\) *[\][\] *@\1@
-	s@^\(</file>.*\)[\][\]@\1@
-	s@\([^]*</file>\) *[\][\] *@\1@
+	s@^\(</file>\) *[\][\] *@\1@
+	s@^\(</file>.*\)[\][\]@\1@
+	s@\([^]*</file>\) *[\][\] *@\1@
 	# In its own line
-	s@^</file> *@</file>\n+@
+	s@^</file> *@</file>\n+@
 	# Begins a line.
-	s@^</file>\([[:print:]]\)@</file>\n+\n\1@
+	s@^</file>\([[:print:]]\)@</file>\n+\n\1@
 	# Ends a line
-	s@\([^]*[[:print:]]\)</file> *@\1\n</file>\n+@
+	s@\([^]*[[:print:]]\)</file> *@\1\n</file>\n+@
 	# Inside a line
-	s@\([^]*[[:print:]]\)</file>\([[:print:]]\)@\1\n</file>\n+\n\2@
+	s@\([^]*[[:print:]]\)</file>\([[:print:]]\)@\1\n</file>\n+\n\2@
 }
 # opening tags
 #
 // !{
-	/[][^]*<code>/ !{
-		/[^]*<code>/ !{
+	/[][^]*<code>/ !{
+		/[^]*<code>/ !{
 			// {
 				# If there are only spaces after the mark, discard them.
-				s/<code> */<code>/
+				s/<code> */<code>/
 				# Inside a line.
-				s/\([[:print:]]\)<code>\([[:print:]]\)/\1\n+\n<code>\n\2/
+				s/\([[:print:]]\)<code>\([[:print:]]\)/\1\n+\n<code>\n\2/
 				# Ends a line. If we are in a list item, it continues.
-				s/<code>/\n+\n<code>/
+				s/<code>/\n+\n<code>/
 			}
 		}
 	}
@@ -657,33 +688,33 @@ exit
 # restrict what goes after "< code" to alphabetic characters.
 #
 // !{
-	/[][^]*<code \([[:alpha:]]*\)>/ !{
-		/[^]*<code \([[:alpha:]]*\)>/ !{
+	/[][^]*<code \([[:alpha:]]*\)>/ !{
+		/[^]*<code \([[:alpha:]]*\)>/ !{
 			// {
-				s/<code [-.] *[^<]*>/<code txt>/g
+				s/<code [-.] *[^<]*>/<code txt>/g
 				# Remove links to download-able code blocks
-				s/<code \([[:alpha:]]*\) [^>]*>/<code \1>/
+				s/<code \([[:alpha:]]*\) [^>]*>/<code \1>/
 				# If there are only spaces after the mark, discard them.
-				s/\(<code [[:alpha:]]*>\) */\1/
+				s/\(<code [[:alpha:]]*>\) */\1/
 				# Inside a line.
-				s/\([[:print:]]\)<code \([[:alpha:]]*\)>\([[:print:]]\)/\1\n+\n[source,\2]\n<code>\n\3/
+				s/\([[:print:]]\)<code \([[:alpha:]]*\)>\([[:print:]]\)/\1\n+\n[source,\2]\n<code>\n\3/
 				# Ends a line. If we are in a list item, it continues.
-				s/<code \([[:alpha:]]*\)>/\n+\n[source,\1]\n<code>/
+				s/<code \([[:alpha:]]*\)>/\n+\n[source,\1]\n<code>/
 			}
 		}
 	}
 }
 // !{
-	/[][^]*<file>/ !{
-		/[^]*<file>/ !{
+	/[][^]*<file>/ !{
+		/[^]*<file>/ !{
 			// {
 				# If there are only spaces after the mark, discard them.
-				s/<file> */<file>/
-				s/^<file>\([[:print:]]\)/<file>\n\1/
+				s/<file> */<file>/
+				s/^<file>\([[:print:]]\)/<file>\n\1/
 				# Inside a line.
-				s/\([[:print:]]\)<file>\([[:print:]]\)/\1\n+\n<file>\n\2/
+				s/\([[:print:]]\)<file>\([[:print:]]\)/\1\n+\n<file>\n\2/
 				# Ends a line. If we are in a list item, it continues.
-				s/<file>/\n+\n<file>/ # No need to insert a <newline> before?
+				s/<file>/\n+\n<file>/ # No need to insert a <newline> before?
 			}
 		}
 	}
@@ -692,18 +723,18 @@ exit
 # We don't convert the "download-able file snippet" feature, hence
 # restrict what goes after "< file" to alphabetic characters.
 // !{
-	/[][^]*<file \([[:alpha:]]*\)>/ !{
-		/[^]*<file \([[:alpha:]]*\)>/ !{
+	/[][^]*<file \([[:alpha:]]*\)>/ !{
+		/[^]*<file \([[:alpha:]]*\)>/ !{
 			// {
-				s/<file [-.] *[^<]*>/<file txt>/g
+				s/<file [-.] *[^<]*>/<file txt>/g
 				# Remove links to download-able code blocks
-				s/<file \([[:alpha:]]*\) [^>]*>/<file \1>/
+				s/<file \([[:alpha:]]*\) [^>]*>/<file \1>/
 				# If there are only spaces after the mark, discard them.
-				s/\(<file [[:alpha:]]*>\) */\1/
+				s/\(<file [[:alpha:]]*>\) */\1/
 				# Inside a line.
-				s/\([[:print:]]\)<file \([[:alpha:]]*\)>\([[:print:]]\)/\1\n+\n[source,\2]\n<file>\n\3/
+				s/\([[:print:]]\)<file \([[:alpha:]]*\)>\([[:print:]]\)/\1\n+\n[source,\2]\n<file>\n\3/
 				# Ends a line. If we are in a list item, it continues.
-				s/<file \([[:alpha:]]*\)>/\n+\n[source,\1]\n<file>/
+				s/<file \([[:alpha:]]*\)>/\n+\n[source,\1]\n<file>/
 			}
 		}
 	}
@@ -719,16 +750,16 @@ t codes
 }
 # 
 // !{
-	/\[source,[[:alpha:]]*]\n<code>/ {
-		s/\[source,[[:alpha:]]*]\n<code>/\n&/
+	/\[source,[[:alpha:]]*]\n<code>/ {
+		s/\[source,[[:alpha:]]*]\n<code>/\n&/
 		b out
 	}
-	/\[source,[[:alpha:]]*]\n<file>/ {
-		s/\[source,[[:alpha:]]*]\n<file>/\n&/
+	/\[source,[[:alpha:]]*]\n<file>/ {
+		s/\[source,[[:alpha:]]*]\n<file>/\n&/
 		b out
 	}
-	s/<code>/\n&/
-	s/<file>/\n&/
+	s/<code>/\n&/
+	s/<file>/\n&/
 }
 :out
 #
@@ -894,8 +925,8 @@ t codes
 # Line breaks after code blocks are already converted.
 #
 # Remove line breaks after </code> or </file>
-s@</code> *[\][\] *@</code>@g
-s@</file> *[\][\] *@</file>@g
+s@</code> *[\][\] *@</code>@g
+s@</file> *[\][\] *@</file>@g
 #
 # Inside a list item:
 # _A line break at end of line will be removed.
@@ -908,8 +939,8 @@ s@</file> *[\][\] *@</file>@g
 	/[\][\] */ s/[\][\] *//
 	/ *[\][\]  */ {
 		s/ *[\][\]  */\n+\n/
-		/<code[^>]*>/ !{
-			/<file[^>]*>/ !{  
+		/<code[^>]*>/ !{
+			/<file[^>]*>/ !{
 				/\n+/ !s//\n+/
 			}
 		}
@@ -1058,7 +1089,7 @@ x
 s/.*//
 x
 s/.*//
-s/[]//g
+s/[]//g
 #
 #@part2@ ---------------------------------------------------------------
 #
