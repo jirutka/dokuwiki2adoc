@@ -860,11 +860,15 @@ t codes
 		b preformat
 	}
 }
+# Block quotes
+# ============
+#
 # A line beginning with ">" that is not in a delimited block is part of
-# a an email-like quote. We will just replace > by U+2502 │.
-# But we also need to make sure that an empty line precedes a set of
-# quoted lines.  We append forced line break to each line of the set to
-# avoid that consecutive lines be merged by asciidoc.
+# a an email-like quote.  We will replace ">" by "> " (Asciidoctor's
+# Markdown-style blockquote) and append a new line with the same sequence of
+# ">" after each quote line.  We also need to make sure that an empty line
+# precedes a set of quoted lines.
+#
 /[]/ !{
 	/^>/ !{
 		/\([^>]*\)>\([^>]*\)/ {
@@ -873,23 +877,23 @@ t codes
 		}
 	}
 	/^>/ {
+		# Append a blank line if the previous line was not a blank line
+		# or quote.
 		// !{
 			s/^/\n/
 			/[^>]*>[^>]*/ !s/^/\n/
 		}
-		s/^>>>>>>/││││││/
-		s/^>>>>>/│││││/
-		s/^>>>>/││││/
-		s/^>>>/│││/
-		s/^>>/││/
-		s/^>/│/
-		s/\n>>>>>>/││││││/
-		s/\n>>>>>/│││││/
-		s/\n>>>>/││││/
-		s/\n>>>/│││/
-		s/\n>>/││/
-		s/\n>/│/
-		s// +/
+		# Replace each consecutive ">" with .
+		:quotes
+		s/^\(*\)>/\1/
+		s/\n\(*\)>/\1/
+		t quotes
+		# Remove spaces after last ">" () and append a new line with the same
+		# sequence of ">" ().
+		s/\(\+\) *\([^\n]*\)/\1\2\n\1/
+		# Convert + to AsciiDoc Markdown-style blockquotes "> "+.
+		s//> /g
+
 		/[^>]*>[^>]*/ !s//>/
 	}
 }
