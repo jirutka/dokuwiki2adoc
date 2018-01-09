@@ -531,8 +531,8 @@ s|<file [[:alpha:]]*>|&|g
 }
 // ! {
 	# Do not allow a forced line break after a closing tag.
-	s@^\(</file>\) *[\][\] *@\1@
-	s@\([^]*</file>\) *[\][\] *@\1@
+	s@^\(</file>\) *[\][\] *@\1@
+	s@\([^]*</file>\) *[\][\] *@\1@
 	s@^</file> *@</file>\n@
 	# Begins a line.
 	s@^</file>\([[:print:]]\)@</file>\n\1@
@@ -656,9 +656,9 @@ s|<file [[:alpha:]]*>|&|g
 }
 // {
 	# Do not allow a forced line break after a closing tag or at EOL.
-	s@^\(</file>\) *[\][\] *@\1@
-	s@^\(</file>.*\)[\][\]@\1@
-	s@\([^]*</file>\) *[\][\] *@\1@
+	s@^\(</file>\) *[\][\] *@\1@
+	s@^\(</file>.*\)[\][\]@\1@
+	s@\([^]*</file>\) *[\][\] *@\1@
 	# In its own line
 	s@^</file> *@</file>\n+@
 	# Begins a line.
