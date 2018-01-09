@@ -393,8 +393,10 @@ s|%%|&|g
 s|</\?nowiki>|&|g
 s|</\?code>|&|g
 s|</\?file>|&|g
+s|</\?note>|&|g
 s|<code [[:alpha:]]*>|&|g
 s|<file [[:alpha:]]*>|&|g
+s|<note [[:alpha:]]*>|&|g
 
 # Unmark tags inside blocks.
 // {
@@ -973,56 +975,50 @@ t linebr
 # ===========
 # This assume the usage of the Note plug-in of DokuWuki): the output file
 # needs a plug-in to be correctly parsed in AsciiDoc then.
-/[][^]*$/ !{
-	// !{
-		/<note[^<]*>/ {
-			# On its own line: nothing to do yet.
-			# Begins a line
-			/^<note[^<]*>[^]/ {
-				s/^<note[^<]*>/&\n/
-				s/$//
-			}
-			# Inside a line.
-			/[[:print:]]<note[^<]*>[[:print:]]/ {
-				s/\([[:print:]]\)\(<note[^<]*>\)\([[:print:]]\)/\1\n\2\n\3/
-				s/$//
-			}
-			# Ends a line.
-			/[[:print:]]<note[^<]*>/ {
-				s/\([[:print:]]\)\(<note[^<]*>\)/\1\n\2/
-				s/$//
-			}
+// !{
+	/<note[^<]*>/ {
+		# On its own line: nothing to do yet.
+		# Begins a line
+		/^<note[^<]*>[^]/ {
+			s/^\(<note[^<]*>\)/\1\n/
+			s/$//
+		}
+		# Inside a line.
+		/[[:print:]]<note[^<]*>[[:print:]]/ {
+			s/\([[:print:]]\)\(<note[^<]*>\)\([[:print:]]\)/\1\n\2\n\3/
+			s/$//
+		}
+		# Ends a line.
+		/[[:print:]]<note[^<]*>/ {
+			s/\([[:print:]]\)\(<note[^<]*>\)/\1\n\2/
+			s/$//
 		}
 	}
-}
-/[][^]*$/ !{
-	// !{
-		\.</note>. {
-			s@</note> *+@</note>@
-			# On its own line: nothing to do yet.
-			\.^</note>*. {
-				s///
-			}
-			\.\n</note>*. {
-				s///
-			}
-			# Begins a line.
-			\.^</note>[^]. {
-				s@^</note>@</note>\n@
-				s///
-			}
-			# Inside a line.
-			\.[[:print:]]</note>[[:print:]]. {
-				s@\([[:print:]]\)</note>\([[:print:]]\)@\1\n</note>\n\2@
-				s///
-			}
-			# Ends a line.
-			\.[[:print:]]</note>*. {
-				s@\([[:print:]]\)</note>@\1\n</note>@
-				s///
-			}
-			s// +/
+	\.</note>. {
+		s@</note> *+@</note>@
+		# On its own line: nothing to do yet.
+		\.^</note>*. {
+			s///
 		}
+		\.\n</note>*. {
+			s///
+		}
+		# Begins a line.
+		\.^</note>[^]. {
+			s@^</note>@</note>\n@
+			s///
+		}
+		# Inside a line.
+		\.[[:print:]]</note>[[:print:]]. {
+			s@\([[:print:]]\)</note>\([[:print:]]\)@\1\n</note>\n\2@
+			s///
+		}
+		# Ends a line.
+		\.[[:print:]]</note>*. {
+			s@\([[:print:]]\)</note>@\1\n</note>@
+			s///
+		}
+		s// +/
 	}
 }
 #
