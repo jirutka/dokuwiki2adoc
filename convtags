@@ -310,6 +310,82 @@ exit
 // {s///;s/^//}
 // {s///;s/^//}
 
+:begin
+#
+# Lists
+# =====
+# We know that we are not in the Code block if no ,  or  begins
+# the pattern space. If after two spaces we see a "*" or a "-' this is a
+# list item, not the beginning of a preformatted block.
+#
+# Dokuwki detects a list item even with an odd number of leading spaces,
+# and no space between the last * or - and the text. The patterns are
+# adapted accordingly.
+# We need to cope with differences between DokuWiki and AsciiDoc:
+# _ In AsciiDoc, a list item is only recognized as such if preceded by an
+#   empty line or by a "line continuation" \n+\n indicator (and there can
+#   be any number of empty  lines between two list items). Else the line
+#   that begins with "*" is  just appended to the previous one.
+# _ In DokuWiki an empty line ends a list, then the next list item will
+#   be of level 1 regardless of the number of spaces before "*" or "-"
+#
+/[]/ !{
+	 # If the line  is not a list item, remove the "list item" indicator
+	 # from the baton, but if it begins with </code> or </file> as that
+	 # doesn't close the item.
+	/^\(   *\)\{1,5\}[*][^*]/ !{
+		/^\(   *\)\{1,5\}-[^-]/ !{
+			\.^</code>. !{
+				\.^</file>. !{
+					s///
+				}
+			}
+		}
+	}
+	/^\(   *\)\{1,5\}[*][^*]/ {
+		# unordered lists
+		s/^   \?\* \?/* /
+		s/^     \?\* \?/** /
+		s/^       \?\* \?/*** /
+		s/^         \?\* \?/**** /
+		s/^           \?\* \?/***** /
+		# Insert a <newline> before this one if the previous was neither
+		# empty nor a list item.
+		// !{
+			// !s/^/\n/
+		}
+		# Remove the line break that could end a list item.
+		s/[\][\] *//
+		# Mark the line as being part of a list item
+		// !s///
+	}
+	/^\(   *\)\{1,5\}-[^-]/ {
+		# ordered lists
+		s/^   \?- \?/. /
+		s/^     \?- \?/.. /
+		s/^       \?- \?/... /
+		s/^         \?- \?/.... /
+		s/^           \?- \?/..... /
+		# Insert a <newline> before this one if the previous was neither
+		# empty nor a list item.
+		// !{
+			// !s/^/\n/
+		}
+		# Remove the line break that could end a list item.
+		s/[\][\] *//
+		# Mark the line as being part of a list item
+		// !s///
+	}
+}
+# A blank line interrupts a multiline list item.
+/^/ s///
+
+# If we have a pattern /^   */, we are in a preformatted block
+# (not in a list, that would have been detected above). Then, skip the
+# processing of tags and code blocks.
+/^   */b preformat
+//b preformat
+
 # Mark tags
 # =========
 # Mark sequences that have a special meaning in DokuWiki syntax.
@@ -385,76 +461,6 @@ s|<file [[:alpha:]]*>|&|g
 	s||</file>|g
 }
 
-:begin
-#
-# Lists
-# =====
-# We know that we are not in the Code block if no ,  or  begins
-# the pattern space. If after two spaces we see a "*" or a "-' this is a
-# list item, not the beginning of a preformatted block.
-#
-# Dokuwki detects a list item even with an odd number of leading spaces,
-# and no space between the last * or - and the text. The patterns are
-# adapted accordingly. 
-# We need to cope with differences between DokuWiki and AsciiDoc:
-# _ In AsciiDoc, a list item is only recognized as such if preceded by an
-#   empty line or by a "line continuation" \n+\n indicator (and there can
-#   be any number of empty  lines between two list items). Else the line
-#   that begins with "*" is  just appended to the previous one.
-# _ In DokuWiki an empty line ends a list, then the next list item will
-#   be of level 1 regardless of the number of spaces before "*" or "-"
-#
-/[]/ !{
-	 # If the line  is not a list item, remove the "list item" indicator
-	 # from the baton, but if it begins with </code> or </file> as that
-	 # doesn't close the item.
-	/^\(   *\)\{1,5\}[*][^*]/ !{
-		/^\(   *\)\{1,5\}-[^-]/ !{
-			\.^</code>. !{
-				\.^</file>. !{
-					s///
-				}
-			}
-		}
-	}
-	/^\(   *\)\{1,5\}[*][^*]/ {
-		# unordered lists
-		s/^   \?\* \?/* /
-		s/^     \?\* \?/** /
-		s/^       \?\* \?/*** /
-		s/^         \?\* \?/**** /
-		s/^           \?\* \?/***** /
-		# Insert a <newline> before this one if the previous was neither
-		# empty nor a list item.
-		// !{
-			// !s/^/\n/
-		}
-		# Remove the line break that could end a list item.
-		s/[\][\] *//
-		# Mark the line as being part of a list item
-		// !s///
-	}
-	/^\(   *\)\{1,5\}-[^-]/ {
-		# ordered lists
-		s/^   \?- \?/. /
-		s/^     \?- \?/.. /
-		s/^       \?- \?/... /
-		s/^         \?- \?/.... /
-		s/^           \?- \?/..... /
-		# Insert a <newline> before this one if the previous was neither
-		# empty nor a list item.
-		// !{
-			// !s/^/\n/
-		}
-		# Remove the line break that could end a list item.
-		s/[\][\] *//
-		# Mark the line as being part of a list item
-		// !s///
-	}
-}
-# A blank line interrupts a multiline list item.
-/^/ s///
-#
 # Code blocks
 # ===========
 #
@@ -495,11 +501,6 @@ s|<file [[:alpha:]]*>|&|g
 # [source,<language>] in case of syntax highlighting.
 # The replacement of the tags by lines containing just"----" will be made
 # in the second part of the program.
-#
-# First if we have a pattern /^   */ we are in a preformatted block
-# (not in a list, that would have been detected above). Then, skip the
-# processing of code blocks.
-/^   */b preformat
 #
 # In this loop we process all code blocks in an input line.
 :codes
