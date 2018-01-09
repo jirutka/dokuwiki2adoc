@@ -767,7 +767,7 @@ t codes
 # Inside Code blocks, we escape "----" that ends an AsciiDoc Listing block.
 # We precede it by a U+15  now to ease checking. We will replace it by
 # a zero width space U+200B before printing the line.
-/[]/ s/\([]\)\(-----\)/\1\2/
+/[]/ s/\([]\)\(----\)/\1\2/
 #
 # Preformatted text
 # =================
