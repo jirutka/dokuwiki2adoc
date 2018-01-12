@@ -394,9 +394,9 @@ s|</\?nowiki>|&|g
 s|</\?code>|&|g
 s|</\?file>|&|g
 s|</\?note>|&|g
-s|<code [[:alpha:]]*>|&|g
-s|<file [[:alpha:]]*>|&|g
-s|<note [[:alpha:]]*>|&|g
+s|<code \+[[:alpha:]]* *>|&|g
+s|<file \+[[:alpha:]]* *>|&|g
+s|<note \+[[:alpha:]]* *>|&|g
 
 # Unmark tags inside blocks.
 // {
@@ -503,12 +503,15 @@ s|<note [[:alpha:]]*>|&|g
 # [source,<language>] in case of syntax highlighting.
 # The replacement of the tags by lines containing just"----" will be made
 # in the second part of the program.
-#
+
+# Discard extra spaces inside code/file tags.
+s/<\(code\|file\) \+>/<\1>/g
+s/<\(code\|file\) \+\([[:alpha:]]\+\) *>/<\1 \2>/g
+
 # In this loop we process all code blocks in an input line.
 :codes
 # Code blocks
 # ===========
-#
 # outside a list item
 # -------------------
 // ! {
