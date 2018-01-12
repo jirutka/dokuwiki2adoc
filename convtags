@@ -1550,7 +1550,7 @@ s//]]/g
 	# Be ready to process the next cell on the right.
 	s/\(|[^|^]*\)\([|^]\)/\1\2/
 	# Process the next cell if any.
-	/|/ !b nextcell
+	/|/! t nextcell
 	# All cells of the row have now been processed.
 	# Remove the last "already processed" mark.
 	s///g
