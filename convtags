@@ -507,6 +507,8 @@ s|<note \+[[:alpha:]]* *>|&|g
 # Discard extra spaces inside code/file tags.
 s/<\(code\|file\) \+>/<\1>/g
 s/<\(code\|file\) \+\([[:alpha:]]\+\) *>/<\1 \2>/g
+# Discard extra spaces between code/file tags and end of the line.
+s/<\(code\|file\)\([^>]*\)> */<\1\2>/g
 
 # In this loop we process all code blocks in an input line.
 :codes
@@ -552,8 +554,6 @@ s/<\(code\|file\) \+\([[:alpha:]]\+\) *>/<\1 \2>/g
 	#
 	/<code>/ {
 		/[][^]*<code>/ !{
-			# If there are only spaces after the mark, discard them.
-			s/<code> */<code>/
 			# In its own line.
 			s/^<code>/<code>/
 			# Begins a line
@@ -572,8 +572,6 @@ s/<\(code\|file\) \+\([[:alpha:]]\+\) *>/<\1 \2>/g
 			s/<code [-.] *[^<]*>/<code txt>/g
 			# Remove links to download-able code blocks
 			s/<code \([[:alpha:]]*\) [^>]*>/<code \1>/
-			# If there are only spaces after the mark, discard them.
-			s/\(<code [[:alpha:]]*>\) */\1/
 			# In its own line.
 			s/^<code \([[:alpha:]]*\)>/[source,\1]\n<code>/
 			# Begins a line
@@ -586,8 +584,6 @@ s/<\(code\|file\) \+\([[:alpha:]]\+\) *>/<\1 \2>/g
 	}
 	/<file>/ {
 		/[][^]*<file>/ !{
-			# If there are only spaces after the mark, discard them.
-			s/<file> */<file>/
 			# In its own line.
 			s/^<file>/<file>/
 			# Begins a line
@@ -606,8 +602,6 @@ s/<\(code\|file\) \+\([[:alpha:]]\+\) *>/<\1 \2>/g
 			s/<file [-.] *[^<]*>/<file txt>/g
 			# Remove links to down-loadable code blocks
 			s/<file \([[:alpha:]]*\) [^>]*>/<file \1>/
-			# If there are only spaces after the mark, discard them.
-			s/\(<file [[:alpha:]]*>\) */\1/
 			# In its own line.
 			s/^<file \([[:alpha:]]*\)>/[source,\1]\n<file>/
 			# Begins a line
@@ -664,8 +658,6 @@ s/<\(code\|file\) \+\([[:alpha:]]\+\) *>/<\1 \2>/g
 	#
 	/<code>/ {
 		/[][^]*<code>/ !{
-			# If there are only spaces after the mark, discard them.
-			s/<code> */<code>/
 			# Inside a line.
 			s/\([[:print:]]\)<code>\([[:print:]]\)/\1\n+\n<code>\n\2/
 			# Ends a line. If we are in a list item, it continues.
@@ -680,8 +672,6 @@ s/<\(code\|file\) \+\([[:alpha:]]\+\) *>/<\1 \2>/g
 			s/<code [-.] *[^<]*>/<code txt>/g
 			# Remove links to download-able code blocks
 			s/<code \([[:alpha:]]*\) [^>]*>/<code \1>/
-			# If there are only spaces after the mark, discard them.
-			s/\(<code [[:alpha:]]*>\) */\1/
 			# Inside a line.
 			s/\([[:print:]]\)<code \([[:alpha:]]*\)>\([[:print:]]\)/\1\n+\n[source,\2]\n<code>\n\3/
 			# Ends a line. If we are in a list item, it continues.
@@ -690,8 +680,6 @@ s/<\(code\|file\) \+\([[:alpha:]]\+\) *>/<\1 \2>/g
 	}
 	/<file>/ {
 		/[][^]*<file>/ !{
-			# If there are only spaces after the mark, discard them.
-			s/<file> */<file>/
 			s/^<file>\([[:print:]]\)/<file>\n\1/
 			# Inside a line.
 			s/\([[:print:]]\)<file>\([[:print:]]\)/\1\n+\n<file>\n\2/
@@ -707,8 +695,6 @@ s/<\(code\|file\) \+\([[:alpha:]]\+\) *>/<\1 \2>/g
 			s/<file [-.] *[^<]*>/<file txt>/g
 			# Remove links to download-able code blocks
 			s/<file \([[:alpha:]]*\) [^>]*>/<file \1>/
-			# If there are only spaces after the mark, discard them.
-			s/\(<file [[:alpha:]]*>\) */\1/
 			# Inside a line.
 			s/\([[:print:]]\)<file \([[:alpha:]]*\)>\([[:print:]]\)/\1\n+\n[source,\2]\n<file>\n\3/
 			# Ends a line. If we are in a list item, it continues.
