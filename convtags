@@ -394,8 +394,8 @@ s|</\?nowiki>|&|g
 s|</\?code>|&|g
 s|</\?file>|&|g
 s|</\?note>|&|g
-s|<code \+[[:alpha:]]* *>|&|g
-s|<file \+[[:alpha:]]* *>|&|g
+s|<code[ |][^>\n]*>|&|g
+s|<file[ |][^>\n]*>|&|g
 s|<note \+[[:alpha:]]* *>|&|g
 
 # Unmark tags inside blocks.
@@ -504,12 +504,28 @@ s|<note \+[[:alpha:]]* *>|&|g
 # The replacement of the tags by lines containing just"----" will be made
 # in the second part of the program.
 
-# Discard extra spaces inside code/file tags.
-s/<\(code\|file\) \+>/<\1>/g
-s/<\(code\|file\) \+\([[:alpha:]]\+\) *>/<\1 \2>/g
-# Discard extra spaces between code/file tags and end of the line.
-s/<\(code\|file\)\([^>]*\)> */<\1\2>/g
+/<\(code\|file\)[^>]*>/ {
+	# Downloadable file block - convert file name into AsciiDoc block title.
+	s/<file \+\([[:alnum:]]\+\|-\)[,;:]* \+[.]*\([^|>][^>]*\)>/<file \1.\2\n>/g
+	s/<file -\(\.[^>]*\)>/<file plain \1>/g
 
+	# Discard extra spaces between tag and lang, discard everything after lang
+	# (may be line number or incorrect file name in code block) until "|" or
+	# block title preprocessed above.
+	s/<\(code\|file\) \+\([[:alpha:]][[:alnum:]]*\)\? *[^|>]*\([^>]*\)>/<\1 \2\3>/g
+
+	# Discard extra spaces inside tag and line number.
+	s/<code *[0-9]*|\? *>/<code>/g
+	s/<file *|\? *>/<file>/g
+
+	# code/file block with description (plugin code2) - discard extra spaces
+	# and dots before description, discard header/footer mark, convert
+	# description into AsciiDoc block title.
+	s/<\(code\|file\)\( [^| ]\+\)\? *|[hf]\?[ .]*\([^>]\+\)>/<\1\2.\3\n>/g
+
+	# Discard extra spaces between code/file tag and end of the line.
+	s/<\(code\|file\)\([^>]*\)> */<\1\2>/g
+}
 # In this loop we process all code blocks in an input line.
 :codes
 # Code blocks
@@ -552,64 +568,54 @@ s/<\(code\|file\)\([^>]*\)> */<\1\2>/g
 	#
 	# Opening tags
 	#
-	/<code>/ {
-		/[][^]*<code>/ !{
+	/<code\(\.[^>]*\)\?>/ {
+		/[][^]*<code\(\.[^>]*\)\?>/ !{
 			# In its own line.
-			s/^<code>/<code>/
+			s/^<code\(\.[^>]*\)\?>/\1<code>/
 			# Begins a line
-			s/^<code>\([[:print:]]\)/<code>\n\1/
+			s/^<code\(\.[^>]*\)\?>\([[:print:]]\)/\1<code>\n\2/
 			# Ends a line. If we are in a list item, it continues.
-			s/<code> */\n<code>/
+			s/<code\(\.[^>]*\)\?> */\n\1<code>/
 			# Inside a line.
-			s/\([[:print:]]\)<code>\([[:print:]]\)/\1\n<code>\n\2/
+			s/\([[:print:]]\)<code\(\.[^>]*\)\?>\([[:print:]]\)/\1\n\2<code>\n\3/
 		}
 	}
 	# Highlighted source code
-	# We don't convert the "download-able code snippet" feature, hence
-	# restrict what goes after "< code" to alphabetic characters.
-	/<code [[:alpha:]]*>/ {
-		/[][^]*<code \([[:alpha:]]*\)>/ !{
-			s/<code [-.] *[^<]*>/<code txt>/g
-			# Remove links to download-able code blocks
-			s/<code \([[:alpha:]]*\) [^>]*>/<code \1>/
+	/<code [[:alpha:]][^>]*>/ {
+		/[][^]*<code \+[[:alpha:]][^>]*>/ !{
 			# In its own line.
-			s/^<code \([[:alpha:]]*\)>/[source,\1]\n<code>/
+			s/^<code \([[:alnum:]]\+\)\(\.[^>]*\)\?>/[source,\1]\n\2<code>/
 			# Begins a line
-			s/^<code \([[:alpha:]]*\)>\([[:print:]]\)/[source,\1]\n<code>\n\2/
+			s/^<code \([[:alnum:]]\+\)\(\.[^>]*\)\?>\([[:print:]]\)/[source,\1]\n\2<code>\n\3/
 			# Ends a line. If we are in a list item, it continues.
-			s/<code \([[:alpha:]]*\)> */\n[source,\1]\n<code>/
+			s/<code \([[:alnum:]]\+\)\(\.[^>]*\)\?> */\n[source,\1]\n\2<code>/
 			# Inside a line.
-			s/\([[:print:]]\)<code \([[:alpha:]]*\)>\([[:print:]]\)/\1\n[source,\2]\n<code>\n\3/
+			s/\([[:print:]]\)<code \([[:alnum:]]\+\)\(\.[^>]*\)\?>\([[:print:]]\)/\1\n[source,\2]\n\3<code>\n\4/
 		}
 	}
-	/<file>/ {
-		/[][^]*<file>/ !{
+	/<file\(\.[^>]*\)\?>/ {
+		/[][^]*<file\(\.[^>]*\)\?>/ !{
 			# In its own line.
-			s/^<file>/<file>/
+			s/^<file\(\.[^>]*\)\?>/\1<file>/
 			# Begins a line
-			s/^<file>\([[:print:]]\)/<file>\n\1/
-			# Inside a line.
-			s/\([[:print:]]\)<file>\([[:print:]]\)/\1\n<file>\n\2/
+			s/^<file\(\.[^>]*\)\?>\([[:print:]]\)/\1<file>\n\2/
 			# Ends a line. If we are in a list item, it continues.
-			s/<file>/\n<file>/
+			s/<file\(\.[^>]*\)\?> */\n\1<file>/
+			# Inside a line.
+			s/\([[:print:]]\)<file\(\.[^>]*\)\?>\([[:print:]]\)/\1\n\2<file>\n\3/
 		}
 	}
 	# Highlighted source code
-	# We don't convert the "download-able file snippet" feature, hence
-	# restrict what goes after "< file" to alphabetic characters.
-	/<file [[:alpha:]]>/ {
-		/[][^]*<file \([[:alpha:]]*\)>/ !{
-			s/<file [-.] *[^<]*>/<file txt>/g
-			# Remove links to down-loadable code blocks
-			s/<file \([[:alpha:]]*\) [^>]*>/<file \1>/
+	/<file [[:alpha:]][^>]*>/ {
+		/[][^]*<file \+[[:alpha:]][^>]*>/ !{
 			# In its own line.
-			s/^<file \([[:alpha:]]*\)>/[source,\1]\n<file>/
+			s/^<file \([[:alnum:]]\+\)\(\.[^>]*\)\?>/[source,\1]\n\2<file>/
 			# Begins a line
-			s/^<file \([[:alpha:]]*\)>\([[:print:]]\)/[source,\1]\n<file>\n\2/
-			# Inside a line.
-			s/\([[:print:]]\)<file \([[:alpha:]]*\)>\([[:print:]]\)/\1\n[source,\2]\n<file>\n\3/
+			s/^<file \([[:alnum:]]\+\)\(\.[^>]*\)\?>\([[:print:]]\)/[source,\1]\n\2<file>\n\3/
 			# Ends a line. If we are in a list item, it continues.
-			s/<file \([[:alpha:]]*\)>/\n[source,\1]\n<file>/
+			s/<file \([[:alnum:]]\+\)\(\.[^>]*\)\?> */\n[source,\1]\n\2<file>/
+			# Inside a line.
+			s/\([[:print:]]\)<file \([[:alnum:]]\+\)\(\.[^>]*\)\?>\([[:print:]]\)/\1\n[source,\2]\n\3<file>\n\4/
 		}
 	}
 }
@@ -656,49 +662,38 @@ s/<\(code\|file\)\([^>]*\)> */<\1\2>/g
 	#
 	# opening tags
 	#
-	/<code>/ {
-		/[][^]*<code>/ !{
+	/<code\(\.[^>]*\)\?>/ {
+		/[][^]*<code\(\.[^>]*\)\?>/ !{
 			# Inside a line.
-			s/\([[:print:]]\)<code>\([[:print:]]\)/\1\n+\n<code>\n\2/
+			s/\([[:print:]]\)<code\(\.[^>]*\)\?>\([[:print:]]\)/\1\n+\n\2<code>\n\3/
 			# Ends a line. If we are in a list item, it continues.
-			s/<code>/\n+\n<code>/
+			s/<code\(\.[^>]*\)\?>/\n+\n\1<code>/
 		}
 	}
 	# Highlighted source code
-	# We don't convert the "download-able code snippet" feature, hence
-	# restrict what goes after "< code" to alphabetic characters.
-	/<code [[:alpha:]]*>/ {
-		/[][^]*<code \([[:alpha:]]*\)>/ !{
-			s/<code [-.] *[^<]*>/<code txt>/g
-			# Remove links to download-able code blocks
-			s/<code \([[:alpha:]]*\) [^>]*>/<code \1>/
+	/<code [[:alpha:]][^>]*>/ {
+		/[][^]*<code [[:alpha:]][^>]*>/ !{
 			# Inside a line.
-			s/\([[:print:]]\)<code \([[:alpha:]]*\)>\([[:print:]]\)/\1\n+\n[source,\2]\n<code>\n\3/
+			s/\([[:print:]]\)<code \([[:alnum:]]\+\)\(\.[^>]*\)\?>\([[:print:]]\)/\1\n+\n[source,\2]\n\3<code>\n\4/
 			# Ends a line. If we are in a list item, it continues.
-			s/<code \([[:alpha:]]*\)>/\n+\n[source,\1]\n<code>/
+			s/<code \([[:alnum:]]\+\)\(\.[^>]*\)\?>/\n+\n[source,\1]\n\2<code>/
 		}
 	}
-	/<file>/ {
-		/[][^]*<file>/ !{
-			s/^<file>\([[:print:]]\)/<file>\n\1/
+	/<file\(\.[^>]*\)\?>/ {
+		/[][^]*<file\(\.[^>]*\)\?>/ !{
 			# Inside a line.
-			s/\([[:print:]]\)<file>\([[:print:]]\)/\1\n+\n<file>\n\2/
+			s/\([[:print:]]\)<file\(\.[^>]*\)\?>\([[:print:]]\)/\1\n+\n\2<file>\n\3/
 			# Ends a line. If we are in a list item, it continues.
-			s/<file>/\n+\n<file>/ # No need to insert a <newline> before?
+			s/<file\(\.[^>]*\)\?>/\n+\n\1<file>/
 		}
 	}
 	# Highlighted source code
-	# We don't convert the "download-able file snippet" feature, hence
-	# restrict what goes after "< file" to alphabetic characters.
-	/<file [[:alpha:]]>/ {
-		/[][^]*<file \([[:alpha:]]*\)>/ !{
-			s/<file [-.] *[^<]*>/<file txt>/g
-			# Remove links to download-able code blocks
-			s/<file \([[:alpha:]]*\) [^>]*>/<file \1>/
+	/<file [[:alpha:]][^>]*>/ {
+		/[][^]*<file [[:alpha:]][^>]*>/ !{
 			# Inside a line.
-			s/\([[:print:]]\)<file \([[:alpha:]]*\)>\([[:print:]]\)/\1\n+\n[source,\2]\n<file>\n\3/
+			s/\([[:print:]]\)<file \([[:alnum:]]\+\)\(\.[^>]*\)\?>\([[:print:]]\)/\1\n+\n[source,\2]\n\3<file>\n\4/
 			# Ends a line. If we are in a list item, it continues.
-			s/<file \([[:alpha:]]*\)>/\n+\n[source,\1]\n<file>/
+			s/<file \([[:alnum:]]\+\)\(\.[^>]*\)\?>/\n+\n[source,\1]\n\2<file>/
 		}
 	}
 }
@@ -713,16 +708,15 @@ t codes
 }
 # 
 // !{
-	/\[source,[[:alpha:]]*]\n<code>/ {
-		s/\[source,[[:alpha:]]*]\n<code>/\n&/
-		b out
+	/<\(code\|file\)>/ {
+		# Source block
+		/\[source,[[:alnum:]]*]\n\(\.[^\n]*\n\)\?<\(code>\|file>\)/ {
+			s/\[source,[[:alnum:]]*]\n\(\.[^\n]*\n\)\?<\(code>\|file>\)/\n&/
+			b out
+		}
+		# Listing block
+		s/\(\.[^\n]*\n\)\?<\(code>\|file>\)/\n&/
 	}
-	/\[source,[[:alpha:]]*]\n<file>/ {
-		s/\[source,[[:alpha:]]*]\n<file>/\n&/
-		b out
-	}
-	s/<code>/\n&/
-	s/<file>/\n&/
 }
 :out
 #
