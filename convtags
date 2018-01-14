@@ -344,11 +344,16 @@ exit
 		s/\([^\n]*\)\n\(.*\)/\2\1/
 	}
 
-	 # If the line  is not a list item, remove the "list item" indicator
-	 # from the baton, but if it begins with </code> or </file> as that
-	 # doesn't close the item.
 	/^\(   *\)\{1,5\}[*][^*]/ !{
 		/^\(   *\)\{1,5\}-[^-]/ !{
+			# If the previous line was a list item, remove leading spaces, it
+			# should not be processed as a preformatted block.
+			// {
+				s/^   *//
+			}
+			# If the line  is not a list item, remove the "list item" indicator
+			# from the baton, but if it begins with </code> or </file> as that
+			# doesn't close the item.
 			\.^</code>. !{
 				\.^</file>. !{
 					s///
