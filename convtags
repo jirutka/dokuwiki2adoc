@@ -1296,7 +1296,7 @@ s/ *\([hf]t\{1,2\}ps\?:[^]*\)/\1/g
 # ==============
 # These are links of which the target is on the server that runs DokuWiki.
 #
-/[^|]*\(|[^]\+\)\?/ {
+/[^|]*\(|[^]*\)\?/ {
 	# Remove blank titles.
 	s@\([^|> ]\+\)| *@\1@g
 	# Replace ":" in target (but not anchor) with "/".
