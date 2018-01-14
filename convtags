@@ -331,6 +331,19 @@ exit
 #   be of level 1 regardless of the number of spaces before "*" or "-"
 #
 /[]/ !{
+	# Convert (un)ordered list item with multiple paragraphs (yalist plugin)
+	# into normal list on single line; following lines are concatenated with
+	# a line break (\\).
+	# FIXME: This can currently handle only one extra paragraph!
+	/^\(   *\)\{1,5\}\([*][*][^*]\|--[^-]\)/ {
+		$ !N
+		s/^\(  *[*-]\)[*-]/\1/
+		# Replace "  .." on next line with a line break (\\).
+		s/\([^\n]*\n\)  *[.][.]/\1 \\\\/
+		# Swap the newline and the baton
+		s/\([^\n]*\)\n\(.*\)/\2\1/
+	}
+
 	 # If the line  is not a list item, remove the "list item" indicator
 	 # from the baton, but if it begins with </code> or </file> as that
 	 # doesn't close the item.
