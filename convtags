@@ -995,11 +995,17 @@ t linebr
 # needs a plug-in to be correctly parsed in AsciiDoc then.
 // !{
 	/<note[^<]*>/ {
-		# On its own line: nothing to do yet.
+		# On its own line
+		/^<note[^<]*>/ {
+			# Prepend empty line if the previous line was not blank.
+			//! s/^/\n&/
+		}
 		# Begins a line
 		/^<note[^<]*>[^]/ {
 			s/^\(<note[^<]*>\)/\1\n/
 			s/$//
+			# Prepend empty line if the previous line was not blank.
+			//! s/^/\n&/
 		}
 		# Inside a line.
 		/[[:print:]]<note[^<]*>[[:print:]]/ {
