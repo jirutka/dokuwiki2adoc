@@ -265,6 +265,7 @@ exit
 # 0C  local tentative replacement
 # 0E  ends a <code>... or <file>... block or of a code block whose
 #         lines begin with two spaces
+# 0F  local tentative replacement
 # 10  local tentative replacement
 # 11  %% in case of an odd number of this pattern in a line
 # 12  Local tentative replacement
@@ -393,9 +394,11 @@ s|%%|&|g
 s|</\?nowiki>|&|g
 s|</\?code>|&|g
 s|</\?file>|&|g
+s|</\?cli>|&|g
 s|</\?note>|&|g
 s|<code[ |][^>\n]*>|&|g
 s|<file[ |][^>\n]*>|&|g
+s|<cli [^>\n]*>|&|g
 s|<note \+[[:alpha:]]* *>|&|g
 
 # Unmark tags inside blocks.
@@ -405,6 +408,7 @@ s|<note \+[[:alpha:]]* *>|&|g
 	s|</nowiki>||g
 	s|</code>||g
 	s|</file>||g
+	s|</cli>||g
 
 	# The following substitutions are repeated until whole line is processed.
 	# Symbol 16 () is moved after each substitution to denote part of the
@@ -412,16 +416,26 @@ s|<note \+[[:alpha:]]* *>|&|g
 	s|^||
 	:unmark-blocks
 
-	# If we're in a code/file block opened on some previous line...
+	# If we're in a code/file (or cli) block opened on some previous line...
 	/^/ b unmark-code
 	/^/ b unmark-file
-	# Remove special mark inside <code[^>]*>...</code>.
+
+	# Remove special mark inside <code[^>]*>...</code> (or </cli>).
+	# XXX: This process even <cli> tag, so we don't need to reserve another
+	# control character for marking multi-line <cli> block. But if we get
+	# <code> block with </cli>, it would incorrectly close the code block. :(
 	/[^]*<code[^>]*>/ {
 		s/\([^]*<code[^>]*>\)/\1/  # first move  behind <code>
 		:unmark-code
-		s/\([^]*\)\([^]\)/\1\2/  # remove all  until </code>
+		s/\([^]*\)\([^]\)/\1\2/  # remove all  until </code> or </cli>
 		t unmark-code
-		s/\([^]*\)/\1/  # move  behind </code>
+		s/\([^]*[]\)/\1/  # move  behind </code> or </cli>
+	}
+	# Remove special mark inside <cli[^>]*>...</cli>
+	# and replace <cli[^>]*> with <code sh>.
+	/[^]*<cli[^>]*>/ {
+		s/\([^]*<\)cli[^>]*>/\1code sh>/
+		b unmark-code
 	}
 	# Remove special mark inside <file[^>]*>...</file>.
 	/[^]*<file[^>]*>/ {
@@ -461,6 +475,9 @@ s|<note \+[[:alpha:]]* *>|&|g
 	s||</nowiki>|g
 	s||</code>|g
 	s||</file>|g
+	# Replace marked </cli> with </code>.
+	s||</code>|g
+	s||</cli>|g
 }
 
 # Code blocks
