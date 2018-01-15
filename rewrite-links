@@ -43,12 +43,17 @@ def normalize_target(target):
 
 
 def relative_from_page(target, page_dir):
-    if not page_dir.startswith('/'):
-        page_dir = '/' + page_dir
     # Note: Add temporary file suffix to distinguish it from directory.
     target = path.join(page_dir, target) + '.txt'
 
     return path.relpath(target, page_dir)[0:-4]
+
+
+def process_target(target, page_dir):
+    if target == '{imagesdir}':
+        return path.relpath('/media' + page_dir, page_dir)
+
+    return relative_from_page(normalize_target(target), page_dir)
 
 
 try:
@@ -56,8 +61,11 @@ try:
 except IndexError:
     die('Usage: %s PAGE_DIR' % sys.argv[0])
 
+if not page_dir.startswith('/'):
+    page_dir = '/' + page_dir
+
 for line in sys.stdin:
     print(re.sub('([^]*)',
-                 lambda m: relative_from_page(normalize_target(m.group(1)), page_dir),
+                 lambda m: process_target(m.group(1), page_dir),
                  line),
           end='')

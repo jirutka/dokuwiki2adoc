@@ -106,6 +106,19 @@ set -eu
 FINALIZE_SED=$(cat <<'__EOF__'
 	# Remove leading empty lines.
 	/./,$!d
+	# On first non-empty line...
+	0,/./ {
+		# if is a title...
+		/^= [^\w\n]/ {
+			# append imagesdir attribute after the title.
+			s|$|\n:imagesdir: {imagesdir}|
+		}
+		# if is not a title...
+		/^= [^\w\n]/ !{
+			# append imagesdir attribute before the non-empty first line.
+			s|^|:imagesdir: {imagesdir}\n\n|
+		}
+	}
 	# Squeez empty lines and remove trailing empty lines.
 	/^$/ !{
 		x
