@@ -38,6 +38,7 @@ Dependencies
 
 * [POSIX-sh](http://pubs.opengroup.org/onlinepubs/009695399/utilities/xcu_chap02.html) compatible shell (e.g. Busybox ash, dash, ZSH, Bash, ...)
 * `sed` supporting GNU extensions: `\?`, `\+`, `\|`, and `^` inside subexpressions
+* Python for rewriting internal links
 
 Usage
 -----

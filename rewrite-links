@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+
+from __future__ import print_function
+from os import getenv, path
+from os.path import relpath
+import re
+import sys
+from sys import exit
+
+
+def die(msg, status=1):
+    print(msg, file=sys.stderr)
+    exit(status)
+
+
+def normalize_target(target):
+    target = target.lower()
+
+    # Remove diacritic, replace "_" with "-".
+    target = target.translate(str.maketrans('áčďéěíňóřšťúůýž_', 'acdeeinorstuuyz-'))
+
+    # Split part after "?" (query) or "#" (fragment).
+    parts = re.split('([#?])', target, maxsplit=1)
+    target = parts[0]
+    suffix = ''.join(parts[1:]) if len(parts) > 1 else ''
+
+    # Replace namespace separator with "/".
+    target = target.replace(':', '/')
+
+    # Target with a namespace separator that does not start with "." is treat
+    # as an absolute link.
+    if target[0] != '/' and target[0] != '.' and '/' in target:
+        target = '/' + target
+
+    # Replace e.g. ".foo" with "./foo", "..foo" with "../foo".
+    target = re.sub('^(\.\.?)([^/.])', '\\1/\\2', target)
+
+    # Rename "start" (default page of the namespace) to "index".
+    if target == 'start' or target.endswith('/start'):
+        target = target[0:-5] + 'index'
+
+    return target + suffix
+
+
+def relative_from_page(target, page_dir):
+    if not page_dir.startswith('/'):
+        page_dir = '/' + page_dir
+    # Note: Add temporary file suffix to distinguish it from directory.
+    target = path.join(page_dir, target) + '.txt'
+
+    return path.relpath(target, page_dir)[0:-4]
+
+
+try:
+    page_dir = sys.argv[1]
+except IndexError:
+    die('Usage: %s PAGE_DIR' % sys.argv[0])
+
+for line in sys.stdin:
+    print(re.sub('([^]*)',
+                 lambda m: relative_from_page(normalize_target(m.group(1)), page_dir),
+                 line),
+          end='')

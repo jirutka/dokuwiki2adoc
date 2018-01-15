@@ -39,6 +39,9 @@
 # 
 VERSION=1
 DATE=04/10/2015
+
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
 #
 # Configuration
 # =============
@@ -85,6 +88,10 @@ IMAGEEXTS=${IMAGEEXTS:-gif,jpg,jpeg,png,svg}
 #   unicode-cs  - ‚single‘, „double“
 #
 QUOTESTYPE=${QUOTESTYPE:-asciidoctor}
+#
+# REWRITE_LINKS is path of the script for post-processing internal links.
+#
+REWRITE_LINKS=${REWRITE_LINKS:-$SCRIPT_DIR/rewrite-links}
 #
 # SED is a sed command to use.
 #
@@ -162,7 +169,7 @@ dw2adoc() {
 
 	# We remove also all zero width spaces U+200B, writing one after [
 	# on line below.
-	< "$1" $SED "s/[​]//g" > "$cleaned_tmp"
+	< "$1" $SED "s/[​]//g" > "$cleaned_tmp"
 	$SED -e "$(< "$0" $SED -n "/^#@part1@/,/^#@part2@/p")" "$cleaned_tmp" > "$asciidoc_tmp"
 	rm -f "$cleaned_tmp"
 
@@ -178,7 +185,8 @@ dw2adoc() {
 			| $SED "sRD_QUOTE$RD_QUOTEg" \
 			| $SED "sIMAGE_FILE_PATT$IMAGE_FILE_PATTg")" \
 		"$asciidoc_tmp" \
-			| $SED -ne "$FINALIZE_SED" > "$2"
+			| $SED -ne "$FINALIZE_SED" \
+			| $REWRITE_LINKS "$(dirname "$1")" > "$2"
 
 	DKROOT="$(echo ${DKROOT%/}/ | $SED s..//.)"
 	DKIMAGES="$(echo ${DKIMAGES%/}/ | $SED s..//.)"
@@ -195,6 +203,7 @@ case "${1:-}" in
 		  DKIMAGES=$DKIMAGES
 		  IMAGEEXTS=$IMAGEEXTS
 		  QUOTESTYPE=$QUOTESTYPE
+		  REWRITE_LINKS=$REWRITE_LINKS
 		  SED=$SED
   
 		  You are using convtags version $VERSION released on $DATE
@@ -1164,6 +1173,8 @@ s/[]//g
 # 1D  tentative beginning and end of image:target[attributes)
 # 1E  last line was /^\n$/
 # 1F  ` constrained mono-spaced
+# 91  start of link to be processed by rewrite-links script
+# 92  end of link to be processed by rewrite-links script
 1s/$//
 # If we see a line with just a <plus> sign it is a list item continuation.
 # _If the next is a heading, replace the <plus> with a <new line>
@@ -1342,32 +1353,24 @@ s/ *\([hf]t\{1,2\}ps\?:[^]*\)/\1/g
 /[^|]*\(|[^]*\)\?/ {
 	# Remove blank titles.
 	s@\([^|>]\+\)| *@\1@g
-	# Replace ":" in target (but not anchor) with "/".
-	:interlink
-	s@\\([^:#|>]*\):\([^|>]*\)\(|[^]\+\)\?@\1/\2\3@
-	t interlink
-	# Prepend "/" to the target with a namespace that does not start with
-	# "/" or ".".
-	s@\ *\([^/.|>]\{2,\}/[^|>]*\)\(|[^]\+\)\?@/\1\2@g
-	# Replace ".." with "../" and "." with "./" at the beginning of the target.
-	s@\ *\([.][.]\?\)\([^/.|>][^|>]*\)\(|[^]\+\)\?@\1/\2\3@g
-
+	# Wrap links in ... to be processed by rewrite-links script.
+	s@\ *\([^#][^|> ]\+\) *\(|[^]\+\)\?@\1\2@g
 	# Links with title
 	/[^|]*|[^]\+/ {
 		# Replace [[#ANCHOR|TITLE]] with <<ANCHOR,TITLE>>.
 		s@\ *#\([^|>]*[^|> ]\+\) *| *\([^]\+\)@<<\1,\2>>@g
 		# Replace [[<target>|<title>]] with xref:<target>#[<title>].
-		s@\ *\([^#|> ]*\) *| *\([^]\+\)@xref:\1#[\2]@g
+		s@\\([^#|> ]*\) *| *\([^]\+\)@xref:\1#[\2]@g
 		# Replace [[<target>|<title>]] with xref:<target>[<title>].
-		s@\ *\([^|> ]*\) *| *\([^]\+\)@xref:\1[\2]@g
+		s@\\([^|> ]*\) *| *\([^]\+\)@xref:\1[\2]@g
 	}
 	# Links without title
 	# Replace [[#ANCHOR]] with <<ANCHOR>>.
 	s@\ *#\([^>]*[^> ]\+\) *@<<\1>>@g
 	# Replace [[<target>]] with xref:<target>#[].
-	s@\ *\([^#>]\+\)@xref:\1#[]@g
+	s@\\([^#>]\+\)@xref:\1#[]@g
 	# Replace [[<target>]] with link:<target>[].
-	s@\ *\([^>]\+\)@xref:\1[]@g
+	s@\\([^>]\+\)@xref:\1[]@g
 }
 # Media
 # =====
@@ -1435,14 +1438,7 @@ t media
 	//! s@{{\([^|} ]*\)\(|[^}]*\)\? *}}@\1["\2"]@
 	# Remove "|" from alt text.
 	s@\([^[]*\["\)|\([^]\+\)@\1\2@
-	# linking
-	# Replace ":" (namespace separator) in links with "/", except external
-	# media files (containing "//" (^W).
-	/[^]*/ {
-		:imglink
-		s@\([^[:]*\):\([^[]*\[[^]]*\]\)@\1/\2@
-		t imglink
-	}
+
 	# Handle image link
 	#
 	# Example:
@@ -1461,10 +1457,10 @@ t media
 		s@xref:\([^[ ]*\)\[\([^]]*\)\]\]@\2,link="\1"]@
 	}
 	/[^[]*[?&]direct[^]*/ {
-		s@\([^?[]*\)?[^]]*@&,link="\1"@
+		s@\([^?[]*\)?[^]]*@&,link="\1"@
 	}
 	/[^[]*[?&]linkonly[^]*/ {
-		s@/\?\([^?&[]\+\)[?&][^[]*\["\([^"]*\)"[^]*@link:{imagesdir}/\1[\2]@
+		s@[/:]\?\([^?&[]\+\)[?&][^[]*\["\([^"]*\)"[^]*@link:{imagesdir}/\1[\2]@
 	}
 	# Dimensions
 	/[^[]*[&?]0x[[:digit:]]\+[^]*/ {
@@ -1484,21 +1480,21 @@ t media
 		s/\([^]*\)\("",\?\)/\1/g
 		# Use block image if there's nothing else on the line,
 		/^ *[^]\+ */ {
-			s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@\nimage::\1\2@
+			s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@\nimage::\1\2@
 		}
 		# otherwise use inline image.
 		# XXX: align is ignored for inline images!
 		/^ *[^]\+ */ !{
-			s@ \?\([^?[]*\)[?]*[^[]*\(\[[^]*\) \?@ image:\1\2 @
+			s@ \?\([^?[]*\)[?]*[^[]*\(\[[^]*\) \?@ image:\1\2 @
 		}
 	}
 	# Other media
 	/[^?[]*IMAGE_FILE_PATT[?[][^]*/I !{
 		# If title is empty, use file name (not complete path) as the title.
 		/[^[]\+\[""[^]*/ {
-			s@\([^/ ]\+\)\[""\([^]]*\]\)@\1["\1"\2@
+			s@\([^:/ ]\+\)\[""\([^]]*\]\)@\1["\1"\2@
 		}
-		s@/\?\([^?[]\+\)[?]*[^[]*\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
+		s@/\?\([^?[]\+\)[?]*[^[]*\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
 	}
 	t media
 }
