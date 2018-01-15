@@ -1028,8 +1028,19 @@ t linebr
 		}
 		# Begins a line
 		/^<note[^<]*>[^]/ {
-			s/^\(<note[^<]*>\)/\1\n/
-			s/$//
+			# If <note>...</note> is on the same line, use paragraph admonition syntax.
+			\@</note> *@ {
+				s@^<note>\([^:<\n][^<\n]*\)</note>@NOTE: \1\n@
+				s@^<note \+important *>\([^:<\n][^<\n]*\)</note>@IMPORTANT: \1\n@
+				s@^<note \+tip *>\([^:<\n][^<\n]*\)</note>@TIP: \1\n@
+				s@^<note \+warning *>\([^:<\n][^<\n]*\)</note>@WARNING: \1\n@
+			}
+			# If the tag was not substituted above, use block syntax (this is
+			# converted to proper AsciiDoc markup in part2).
+			\@^<note[^<]*>@ {
+				s/^\(<note[^<]*>\)/\1\n/
+				s/$//
+			}
 			# Prepend empty line if the previous line was not blank.
 			//! s/^/\n&/
 		}
