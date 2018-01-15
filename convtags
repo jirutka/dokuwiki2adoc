@@ -1322,7 +1322,7 @@ s/ *\([hf]t\{1,2\}ps\?:[^]*\)/\1/g
 #
 # Email addresses
 # ===============
-/ *[^@?| ]\+@[[:alnum:].-]\+\(?[^|]*\)\?\(|[^]*\)\?/ {
+/ *[^@?| ]\+@[[:alnum:].-]\+\(?[^|]*\)\? *\(|[^]*\)\?/ {
 	# Convert [[<email> | <title>]] to mailto:<email>[<title>].
 	s/ *\(mailto:\)\?\([^@?| ]\+@[[:alnum:].-]\+\.[[:alpha:]]\{2,\}\) *| *\([^]*\)/mailto:\2[\3]/g
 	# Convert [[<email>?subject=<subject> | <title>]] to mailto:<email>["<title>", "<subject>"].
