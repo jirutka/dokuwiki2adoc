@@ -1312,10 +1312,8 @@ s/ *\([hf]t\{1,2\}ps\?:[^]*\)/\1/g
 	# Prepend "/" to the target with a namespace that does not start with
 	# "/" or ".".
 	s@\ *\([^/.|>]\{2,\}/[^|>]*\)\(|[^]\+\)\?@/\1\2@g
-	# Remove useless prefixes "." and "./" in the target.
-	s@\ *\./\?\([^.|>][^|>]*\)\(|[^]\+\)\?@\1\2@g
-	# Replace ".." with "../" at the beginning of the target.
-	s@\ *\.\.\([^/.|>][^|>]*\)\(|[^]\+\)\?@../\1\2@g
+	# Replace ".." with "../" and "." with "./" at the beginning of the target.
+	s@\ *\([.][.]\?\)\([^/.|>][^|>]*\)\(|[^]\+\)\?@\1/\2\3@g
 
 	# Links with title
 	/[^|]*|[^]\+/ {
