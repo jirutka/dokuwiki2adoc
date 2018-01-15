@@ -58,21 +58,22 @@ SCRIPT_DIR=$(dirname "$(realpath "$0")")
 #
 CONFIGFILE=${CONFIGFILE:-}
 #
-# DKROOT is the absolute URL of the DokuWiki remote server.
+# DKROOT is the absolute URL of the DokuWiki remote server *without* protocol
+# (https:// or http://).
 # Setting it allows you to replace the internal links in a DokuWiki page
 # by corresponding external links in the converted AsciiDoc page, thus
 # allowing to check them.
 # When converting back to DokuWiki the absolute URLs are kept.
 #
-DKROOT=${DKROOT:-http://docs.slackware.com}
+DKROOT=${DKROOT:-docs.slackware.com}
 #
 # DKIMAGES is the absolute URL of the images' sub-directory of the
-# DokuWiki installation.
+# DokuWiki installation *without* protocol (https:// or http://).
 # Setting it allows you to display in the converted AsciiDoc page the
 # images linked as internal in the DokuWiki pages, and optionally to
 # keep the full URL of the images in the converted back DokuWiki pages.
 #
-DKIMAGES=${DKIMAGES:-http://docs.slackware.com/_media}
+DKIMAGES=${DKIMAGES:-docs.slackware.com/_media}
 #
 # IMAGEEXTS is a comma separated list of file extensions (without a dot) that
 # are acceptable for image::[] directive. Other media will be converted just
@@ -1320,7 +1321,11 @@ s/~~[[:alnum:]]\+~~//g
 #
 # We convert them before the tables, because in DokuWiki syntax they can
 # include a "|" that would otherwise be confused with a cell boundary.
-#
+
+# Replace absolute links to pages on DokuWiki with internal links (but w/o
+# converting "/" to ":").
+s@ *https\?:DKROOT\([^]\+\)@\1@g
+
 # External links
 # ==============
 # Remove the space(s) that could precede the vertical bar or follow [[ in
@@ -1438,6 +1443,10 @@ t media
 	//! s@{{\([^|} ]*\)\(|[^}]*\)\? *}}@\1["\2"]@
 	# Remove "|" from alt text.
 	s@\([^[]*\["\)|\([^]\+\)@\1\2@
+
+	# Replace absolute link to media on DokuWiki with internal link (but w/o
+	# converting "/" to ":").
+	s@ *https\?:DKIMAGES\([^]\+\)@/\1@
 
 	# Handle image link
 	#
