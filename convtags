@@ -1304,7 +1304,7 @@ s/ *\([hf]t\{1,2\}ps\?:[^]*\)/\1/g
 #
 /[^|]*\(|[^]*\)\?/ {
 	# Remove blank titles.
-	s@\([^|> ]\+\)| *@\1@g
+	s@\([^|>]\+\)| *@\1@g
 	# Replace ":" in target (but not anchor) with "/".
 	:interlink
 	s@\\([^:#|>]*\):\([^|>]*\)\(|[^]\+\)\?@\1/\2\3@
@@ -1318,7 +1318,7 @@ s/ *\([hf]t\{1,2\}ps\?:[^]*\)/\1/g
 	# Links with title
 	/[^|]*|[^]\+/ {
 		# Replace [[#ANCHOR|TITLE]] with <<ANCHOR,TITLE>>.
-		s@\ *#\([^|> ]*\) *| *\([^]\+\)@<<\1,\2>>@g
+		s@\ *#\([^|>]*[^|> ]\+\) *| *\([^]\+\)@<<\1,\2>>@g
 		# Replace [[<target>|<title>]] with xref:<target>#[<title>].
 		s@\ *\([^#|> ]*\) *| *\([^]\+\)@xref:\1#[\2]@g
 		# Replace [[<target>|<title>]] with xref:<target>[<title>].
@@ -1326,7 +1326,7 @@ s/ *\([hf]t\{1,2\}ps\?:[^]*\)/\1/g
 	}
 	# Links without title
 	# Replace [[#ANCHOR]] with <<ANCHOR>>.
-	s@\ *#\([^#>]\+\)@<<\1>>@g
+	s@\ *#\([^>]*[^> ]\+\) *@<<\1>>@g
 	# Replace [[<target>]] with xref:<target>#[].
 	s@\ *\([^#>]\+\)@xref:\1#[]@g
 	# Replace [[<target>]] with link:<target>[].
