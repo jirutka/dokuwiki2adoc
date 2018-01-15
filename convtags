@@ -1766,7 +1766,8 @@ s/--/–/g  # U+2013
 # ==========
 /__/ {
 	s/__//g
-	s/\([^]\+\)/[underline]#\1#/g
+	# XXX: Convert underline to strong (bold) to improve typography
+	s/\([^]\+\)/**\1**/g
 	s//__/g
 }
 #
