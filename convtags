@@ -1598,9 +1598,8 @@ s//]]/g
 	# same one twice.   
 	# We tentatively use U+11  for "align center" as in DokuWiki "^"
 	# denotes a cell boundary.
-	# "left" (<) is the default in AsciiDoc so we omit it. Also ensure that
-	# there's at least one space after "|" to make it more readable.
-	s/\([|^]\) \?\([^|^ ][^|^]*[|^]\)/\1 \2/  # left
+	# Ensure that there's at least one space after "|" to make it more readable.
+	s/\([|^]\) \?\([^|^ ][^|^]*[|^]\)/<\1 \2/  # left
 	s/\([|^]  [^|^]*[^|^ ] \?[|^]\)/>\1/  # right
 	s/\([|^]  [^|^]*   *[|^]\)/\1/  # center
 	# Format the cell as a header, case occurring.
@@ -1621,6 +1620,8 @@ s//]]/g
 	# Remove the last cell separator, and case occurring the " h" that
 	# precedes it.
 	s/ h|//
+	# Remove the "align left" mark (<) - it is the default in AsciiDoc.
+	s/<|/|/g
 	s/|//
 	// !{
 		# Mark the beginning of the table.
