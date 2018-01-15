@@ -402,7 +402,10 @@ exit
 # If we have a pattern /^   */, we are in a preformatted block
 # (not in a list, that would have been detected above). Then, skip the
 # processing of tags and code blocks.
-/^   */b preformat
+/^   */ {
+	# If there's not a /*comment...
+	\|^   */[*]|! b preformat
+}
 //b preformat
 
 # Mark tags
@@ -418,6 +421,8 @@ s|<code[ |][^>\n]*>|&|g
 s|<file[ |][^>\n]*>|&|g
 s|<cli [^>\n]*>|&|g
 s|<note \+[[:alpha:]]* *>|&|g
+s|^/[*]|&|g  # start of comment /*
+s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 
 # Unmark tags inside blocks.
 // {
@@ -496,6 +501,27 @@ s|<note \+[[:alpha:]]* *>|&|g
 	# Replace marked </cli> with </code>.
 	s||</code>|g
 	s||</cli>|g
+}
+
+# Comments
+# ========
+# Discard /*commented content*/.
+#
+\|/[*]| {
+	:comment-addline
+	s|[*]/||g
+	# If comment is not terminated...
+	\|/[*][^]*| !{
+		$ !N  # read next line
+		s/\([^\n]*\)\(\n.*\)/\2\1/  # swap the next line and the baton
+		b comment-addline  # iterate
+	}
+	s| */[*][^]*||g  # discard everything between /* and */
+
+	# If there's some remaining comment...
+	\|/[*]| {
+		b comment-addline  # iterate
+	}
 }
 
 # Code blocks
