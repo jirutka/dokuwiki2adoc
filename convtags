@@ -1312,6 +1312,9 @@ s:---:&:g                 # em-space
 s:\(^\|[^-]\)--:\1--:g  # en-space (in middle/end of line)
 s:([cr]):&:g              # (c), (r)
 s:(tm):&:g                # (tm)
+# icons
+s/:!:/&/g
+s/:?:/&/g
 
 # Remove special meaning inside <nowiki> ... </nowiki> and %% ... %%.
 :unescape
@@ -1751,7 +1754,10 @@ t breaks
 s/(c)/(C)/g
 s/(r)/(R)/g
 s/(tm)/(TM)/g
-
+# Icons
+# =====
+s/:!:/icon:exclamation[]/g
+s/:?:/icon:question[]/g
 # em dash
 # ======
 s/---/—/g  # U+2014
