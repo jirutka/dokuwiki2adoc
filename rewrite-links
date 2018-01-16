@@ -24,6 +24,9 @@ def normalize_target(target):
     target = parts[0]
     suffix = ''.join(parts[1:]) if len(parts) > 1 else ''
 
+    if not target:
+        return suffix
+
     # Replace namespace separator with "/".
     target = target.replace(':', '/')
 
@@ -50,6 +53,9 @@ def relative_from_page(target, page_dir):
 
 
 def process_target(target, page_dir):
+    if not target:
+        return target
+
     if target == '{imagesdir}':
         return path.relpath('/media' + page_dir, page_dir)
 
