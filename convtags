@@ -184,6 +184,11 @@ dw2adoc() {
 	# We remove also all zero width spaces U+200B, writing one after [
 	# on line below.
 	< "$1" $SED "s/[​]//g" > "$cleaned_tmp"
+
+	# Ensure that the file does not end with a comment ("*/"). This is needed
+	# for detection of unterminated comment to work correctly.
+	printf '\n\n' >> "$cleaned_tmp"
+
 	$SED -e "$(< "$0" $SED -n "/^#@part1@/,/^#@part2@/p")" "$cleaned_tmp" > "$asciidoc_tmp"
 	rm -f "$cleaned_tmp"
 
@@ -554,12 +559,19 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 	\|/[*][^]*| !{
 		$ !N  # read next line
 		s/\([^\n]*\)\(\n.*\)/\2\1/  # swap the next line and the baton
-		b comment-addline  # iterate
+		$ !b comment-addline  # iterate, unless we're at EOF
 	}
 	s| */[*][^]*||g  # discard everything between /* and */
 
 	# If there's some remaining comment...
 	\|/[*]| {
+		# If we're at the last line, it's most likely an error. DokuWiki ignores
+		# "/*" if there's no terminating "*/". This is not possible in sed (or
+		# I just don't know how), so we just add error after EOF and terminate.
+		$ {
+			s||\n\n**CAUTION: Conversion failed due to unterminated comment**\n&|
+			q6  # quit with status 6
+		}
 		b comment-addline  # iterate
 	}
 }
