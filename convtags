@@ -297,8 +297,10 @@ exit
 # 15  separator, replaced by a zero width space U+200B at end of script
 # 16  marks the beginning of the remaining part of the line where we
 #         still have to look for substitutions.
+# 17  local tentative replacement
 # 1A  begins a <note[^<]*> ... </note> area
 # 1C  tentatively replaces /^  / in a preformatted block.
+# 07 8c  start of inline latex (ends with )
 # We have to deal with DokuWiki' syntax, that:
 # _allows to put the opening or closing tag of a block anywhere on a line
 # _has several ways of marking the beginning and the end of a code block
@@ -439,6 +441,7 @@ s|</\?nowiki>|&|g
 s|</\?code>|&|g
 s|</\?file>|&|g
 s|</\?cli>|&|g
+s|</\?latex>|&|g
 s|</\?note>|&|g
 s|<code[ |][^>\n]*>|&|g
 s|<file[ |][^>\n]*>|&|g
@@ -455,6 +458,7 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 	s|</code>||g
 	s|</file>||g
 	s|</cli>||g
+	s|</latex>||g
 
 	# The following substitutions are repeated until whole line is processed.
 	# Symbol 16 () is moved after each substitution to denote part of the
@@ -482,6 +486,14 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 	/[^]*<cli[^>]*>/ {
 		s/\([^]*<\)cli[^>]*>/\1code sh>/
 		b unmark-code
+	}
+	# Remove special mark inside <latex>...</latex>.
+	/[^]*<latex>/ {
+		s/\([^]*<latex>\)/\1/  # first move  behind <latex>
+		:unmark-latex
+		s/\([^]*\)\([^]\)/\1\2/  # remove all  until </latex>
+		t unmark-latex
+		s/\([^]*\)/\1/  # move  behind </latex>
 	}
 	# Remove special mark inside <file[^>]*>...</file>.
 	/[^]*<file[^>]*>/ {
@@ -521,6 +533,11 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 	s||</nowiki>|g
 	s||</code>|g
 	s||</file>|g
+	# Replace marked <latex> with <nowiki> with flag .
+	s|<latex>\$\?||g
+	# Replace marked </latex> with  (</nowiki>).
+	s|\$\?||g
+	s||</latex>|g
 	# Replace marked </cli> with </code>.
 	s||</code>|g
 	s||</cli>|g
@@ -1187,6 +1204,7 @@ s/[]//g
 # 1D  tentative beginning and end of image:target[attributes)
 # 1E  last line was /^\n$/
 # 1F  ` constrained mono-spaced
+# 07 8c  start of inline latex
 # 91  start of link to be processed by rewrite-links script
 # 92  end of link to be processed by rewrite-links script
 1s/$//
@@ -1758,6 +1776,12 @@ s/(tm)/(TM)/g
 # =====
 s/:!:/icon:exclamation[]/g
 s/:?:/icon:question[]/g
+#
+# Inline STEM (LaTeX)
+# ===================
+// {
+	s/\([^]*\)/stem:\[\1\]/g
+}
 # em dash
 # ======
 s/---/—/g  # U+2014
