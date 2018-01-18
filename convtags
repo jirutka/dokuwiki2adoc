@@ -284,7 +284,6 @@ exit
 # Char     Corresponding mark or meaning
 # 01  :: begins a <code> ... </code> block
 # 02  :: begins a <file> ... </file> block
-# 03  :: begins a <nowiki> ... </nowiki> area
 # 04  :: separates the baton from the input data
 # 05  :: begins a preformatted block
 # 06  :: list item that can continue on the next line
@@ -297,7 +296,7 @@ exit
 #          lines begin with two spaces
 # 0F  :: local tentative replacement
 # 10  :: local tentative replacement
-# 11  :: %% in case of an odd number of this pattern in a line
+# 11  :: local tentative replacement
 # 12  :: local tentative replacement
 # 12  :: local tentative replacement
 # 14  :: indicates a blank line so we know that the previous was blank
@@ -1300,7 +1299,6 @@ s/[]//g
 # Char     Corresponding mark or meaning
 # 01  :: <code>
 # 02  :: <file>
-# 03  :: <nowiki>
 # 04  :: separates the stack from the input data
 # 05  :: to mark characters that have a special meaning
 # 06  :: tentatively replaces "mono-spaced" '' =>  => ``
@@ -1311,7 +1309,6 @@ s/[]//g
 # OC  :: right single quotation mark: ' => ^L => `'
 # 0E  :: left double quotation mark: " => ^N => "`
 # 0F  :: right double quotation mark: " => ^O => `"
-# 10  :: </nowiki>
 # 11  :: various tentative replacements
 # 12  :: tentatively replaces "|" in tables f no cell boundary,
 #          then escaped as "\" once converted.
@@ -1325,7 +1322,7 @@ s/[]//g
 # 18  :: [[
 # 19  :: ]]
 # 1A  :: ] then ++]++
-# 1D  :: tentative beginning and end of image:target[attributes]
+# 1D  :: tentative beginning and end of image:target[attributes]
 # 1E  :: last line was /^\n$/
 # 1F  :: ` constrained mono-spaced
 # 91  :: start of link to be processed by rewrite-links script
@@ -2173,7 +2170,6 @@ s/$\$/+++$$+++/g
 s:://:g
 s//++[++/g
 s//++]++/g
-s//++/g
 s//++/g
 s//++/g
 s//``/g
