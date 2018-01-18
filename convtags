@@ -1658,7 +1658,7 @@ t media
 
 	# Replace absolute link to media on DokuWiki with internal link (but w/o
 	# converting "/" to ":").
-	s@ *https\?:DKIMAGES\([^]\+\)@/\1@
+	s@https\?:DKIMAGES\([^]\+\)@/\1@
 
 	# Handle image link
 	#
