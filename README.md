@@ -1,13 +1,13 @@
 # convtags
-convtags is a bidirectional converter beetween DokuWiki and AsciiDoc formatted text files.
+convtags is a converter from DokuWiki to AsciiDoc formatted text files.
 
 
 What is convtags
 ----------------
 
-convtags is a bidirectional converter:
+convtags is a converter:
 
-DokuWiki => AsciiDoc => Dokuwiki
+DokuWiki => AsciiDoc
   
 Written with portability in mind, it should work on any UNIX® like operating
 system.
@@ -17,11 +17,6 @@ Target use cases
 
 * Convert a wiki powered by DokuWiki to a static website
 * Ease the translation of a wiki powered by DokuWiki
-
-Warning: the conversion from AsciiDoc to DokuWiki is only provided to convert
-back a document previously converted from DokuWiki to AsciiDoc. It can handle
-only a small subset of the AsciiDoc constructs, i.e. those that have a
-matching equivalent in DokuWiki.
 
 Installation
 ------------
@@ -43,8 +38,6 @@ Dependencies
 
 convtags has no hard dependency beyond a shell and some usual utilities
 found in all UNIX-like systems, mainly sed.
-
-AsciiDoc is an obvious soft dependency.
 
 Usage
 -----

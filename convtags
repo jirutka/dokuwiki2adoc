@@ -32,8 +32,6 @@
 #   Conversion DokuWiki to AsciiDoc (part 1)
 # ------------------ Line tagged @part2@ -------------------------------
 #   Conversion DokuWiki to AsciiDoc (part 2)
-# ------------------ Line tagged @part3@ -------------------------------
-#   Conversion AsciiDoc to DokuWiki
 # ------------------ Line tagged @EOF@  --------------------------------
 #   Information about support
 # ----------------------------------------------------------------------
@@ -72,22 +70,6 @@ DKROOT=${DKROOT:-http://docs.slackware.com}
 #
 DKIMAGES=${DKIMAGES:-http://docs.slackware.com/_media}
 #
-# KEEPIMG is a switch (yes/no) to indicate if the external URL of the
-# images stored on the DokuWiki installation should be be kept (if yes) or
-# stripped (if no) from the links to these images in the pages converted
-# back to DokuWiki.
-# Intended usage:
-# _Choose yes to check the layout of the converted back DokuWiki page
-#  locally (before transfering it to the remote DokuWiki server).
-# _Choose no to transfer the converted page to the remote Dokuwiki server.
-#
-KEEPIMAGES=${KEEPIMAGES:-yes}
-#
-# ICONSDIR is the directory that gathers the icons in the local Asciidoc
-# installation.
-#
-ICONSDIR=${ICONSDIR:-/etc/asciidoc/images/icons}
-#
 # SED is a sed command to use.
 #
 SED=${SED:-sed}
@@ -113,23 +95,16 @@ DKIMAGES=${DKIMAGES%/}/
 
 help() {
 	cat >&2 <<-EOF
-	  convtag: bidirectional converter between DokuWiki and AsciiDoc text files
+	  convtag: converter from DokuWiki to AsciiDoc
 
 	  Usage: convtags da [DokuWiki file] [AsciiiDoc file]
-	         convtags ad [AsciiDoc file] [DokuWiki file]
-	         convtags aw [AsciiDoc file] [Web page in XHTML format]
 	         convtags config   # information about configuration settings
 	         convtags settings # display current settings
 	         convtags support  # how to get support
 
-	  Warning:  "convtag ad" has a narrow scope. It is limited to converting
-	  back to DokuWiki AsciiDoc files that were converted by "convtags da".
-
-	  Of course "convtags aw" needs AsciiDoc to work.
-  
 	  Visit http://slint.fr/misc/convtags to know more and get the current
 	  release.
-  
+
 	  This is convtags version $VERSION released on $DATE.
 	EOF
 	exit 1
@@ -148,7 +123,7 @@ dw2adoc() {
 	DKROOT="$(echo ${DKROOT%/}/ | $SED s.//..)"
 	DKIMAGES="$(echo ${DKIMAGES%/}/ | $SED s.//..)"
 
-	$SED -n -e "$(< "$0" $SED -n "/^#@part2@/,/^#@part3@/p" \
+	$SED -n -e "$(< "$0" $SED -n "/^#@part2@/,/^#@EOF@/p" \
 		| $SED "sDKROOT$DKROOTg" \
 		| $SED "sDKIMAGES$DKIMAGESg")" "$asciidoc_tmp" > "$2"
 
@@ -158,22 +133,6 @@ dw2adoc() {
 	rm -f "$asciidoc_tmp"
 }
 
-adoc2dw() {
-	if [ "$KEEPIMAGES" = 'no' ]; then
-		DKIMAGES=""
-	fi
-	$SED -e "$(< "$0" $SED -n "/^#@part3@/,/^#@EOF@/p" \
-		| $SED "sDKROOT$DKROOTg" \
-		| $SED "sDKIMAGES$DKIMAGESg")" "$1" > "$2"
-}
-
-adoc_xhtml11() {
-	asciidoc -b xhtml11 -a icons \
-		-a iconsdir=$ICONSDIR \
-		-a imagesdir=$DKIMAGES \
-		-o "$2" "$1"
-}
-
 case "${1:-}" in
 	settings)
 		cat <<-EOF
@@ -181,8 +140,6 @@ case "${1:-}" in
 		  CONFIGFILE=$CONFIGFILE
 		  DKROOT=$DKROOT
 		  DKIMAGES=$DKIMAGES
-		  KEEPIMAGES=$KEEPIMAGES
-		  ICONSDIR=$ICONSDIR
 		  SED=$SED
   
 		  You are using convtags version $VERSION released on $DATE
@@ -205,14 +162,6 @@ case "${1:-}" in
 	da)
 		[ $# -eq 3 ] || help
 		dw2adoc "$2" "$3"
-	;;
-	ad)
-		[ $# -eq 3 ] || help
-		adoc2dw "$2" "$3"
-	;;
-	aw)
-		[ $# -eq 3 ] || help
-		adoc_xhtml11 "$2" "$3"
 	;;
 	*)
 		help
@@ -1691,668 +1640,6 @@ s/\([[:graph:]]*\) */\1/
 # Remove the baton from the line before printing it.
 s/.*//
 p
-#
-#@part3@ ---------------------------------------------------------------
-#
-# List of the control codes and other indicators used.
-# 
-# Char.  Corresponding mark or meaning
-# 01  Literal block
-# 02  Replacement of "//" for emphasized until after links processing
-# 04  Separates the baton from the input data
-# 06  List item to be continued
-# 07  $$ precede the text not to be formatted
-# 08   $$ follows the text not to be formatted
-# 11  various tentative replacements
-# 12  Replaces  at the beginning of the next line
-# 13  Quote block, used for multi-level quoting
-# 14  Replaces $$
-# 15  Table row
-# 16  end of a table cell currently being formatted
-# 17  Tentative replacement
-# 18  [[
-# 19   ]]
-# 1A  []
-# 1C   [
-# 1D   ]
-#
-# Initialization
-# ==============
-1 s/$//
-2,$	{
-		G
-		s/\n//
-}
-# Remove useless trailing spaces
-#s/\([^ ]\) */\1/
-# If the baton included a  or a  or a  indicator, move
-# it at the beginning of the pattern space so we know that we are in a
-# delimited  block.
-# // {s///;s/^//}
-# If the baton included a  move it at the beginning of the pattern
-# space so we know that we are in a "no formatting" area. But should we
-# assume that a no formatting area spans across several lines? 
-#// {s///;s/^//}
-#
-# We will first get out of the way all lines whose content should not be
-# formatted: this stands for Literal and Quote blocks.
-:loop
-// {
-	# If the line is part of the block, print it as-is unless it ends in
-	# <code>.
-	/<code>/ !{
-		/^----/ !b print
-	}
-	# Else close the Literal block.
-	s///
-	s@----@</code>@
-	# If we don't continue a list item, just print </code>.
-	// !b print
-}
-// {
-:list
-	# Unordered lists
-	# ===============
-	s/^* /  * /g
-	s/^*\* /    * /g
-	s/^*\*\* /      * /g
-	s/^*\*\*\* /        * /g
-	s/^*\*\*\*\* /          * /g
-	s/^\. /  - /g
-	s/^\.\. /    - /g
-	s/^\.\.\. /      - /g
-	s/^\.\.\.\. /        - /g
-	s/^\.\.\.\.\. /          - /g
-	# Ordered lists
-	# =============
-	s/\n\* /\n  * /g
-	s/\n\*\* /\n    * /g
-	s/\n\*\*\* /\n      * /g
-	s/\n\*\*\*\* /\n        * /g
-	s/\n\*\*\*\*\* /\n          * /g
-	s/\n\. /\n  - /g
-	s/\n\.\. /\n    - /g
-	s/\n\.\.\. /\n      - /g
-	s/\n\.\.\.\. /\n        - /g
-	s/\n\.\.\.\.\. /\n          - /g
-	# print as-is an empty line, the list item stops here then.
-	/^/ {
-		s///
-		b print
-	}
-	/\n\[[^]]*]/ {
-		s///
-		b endlist
-	}
-	\.\n//. {
-		s///
-		b endlist
-	}
-	$ !N
-	# Move the baton at end of line.
-	s/\([^\n]*\)\(.*\)/\2\1/
-	# If two forced line break precedes a \n, remove the \n
-	s/ \\\\ \\\\ \n/\\\\ \\\\ /
-	/\n/ {
-		s///
-		b format
-	}
-	/\n+/ {
-		$ !N
-		# Move the baton at end of line.
-		s/\([^\n]*\)\(.*\)/\2\1/
-		# Code block but not highlighted source code
-		/----/ {
-			s/\n+\n----//
-			s/[^]*/&<code>/
-			# The next line will be in a Code block
-			s//&/
-			b format
-		}
-		# Highlighted source code
-		// !{
-			/\[source,[[:alpha:]]\{1,\}]/ {
-				# Drop the next line, that contains "----".
-				N
-				s/\n[^\n]*$//
-				# Drop the \n+ before [source, ...].
-				s/\n+//
-				# Convert the markup.
-				s/\n\[source,\([[:alpha:]]\{1,\}\)]/ <code \1>/
-				# The next line will be in a Code block.
-				s//&/
-				b format
-			}
-		}
-		# No Code block.
-		\@</code>\n+\n@ {
-		  \@</code>\n+\n[*]\{1,5\}@ {
-				s@</code>\n+\n\([^]*\)@</code>\n\1@
-				b list
-			}
-		  \@</code>\n+\n[.]\{1,5\}@ {
-				s@</code>\n+\n\([^]*\)@</code>\n\1@
-				b list
-			}
-			s@</code>\n+\n\([^]*\)@</code>\1@
-			b list
-		}
-		# Convert a forced line break inside a list item.
-		s@</code> +\n@</code> \\\\ @
-		# Append the next line to </code> , unless it be a list item or a note.
-		/\n[*][*]* / !{
-			/\n[.][.]* / ! {
-				/[NOTEWARIGMPO]\{3,9\}]/ !{
-					s/\n+\n/ \\\\ /
-				}
-			}
-		}
-		# if it is a list item or a note, remove \n+
-		/\n[*][*]* / s/\n+//
-		/\n[.][.]* / s/\n+//
-		/[NOTEWARIGMPO]\{3,9\}]/ s/\n+//
-		s/\\\\ +/\\\\ \\\\ /
-		t list
-	}
-	/\n=====*/ {
-		s///
-		b endlist
-	}
-	/\n-----*/ {
-		s///
-		b endlist
-	}
-	$ !{
-		t list
-	}
-}
-# Continuation of list items ended in above line.
-#
-# If we find ** at the beginning of a line we will assume that it begins
-# with a word in bold but is not a list item, unless there be an odd
-# number of ** on that line, though bold string could span across lines...
-/^[*][*][^*]/ {
-	s/[*][*]//g
-	s/\([^]\{1,\}\)/\1/g
-	// !{
-		s//**/g
-		b endlist
-	}
-	s//**/g
-	s//**/g
-	# List item
-	s/*//
-	t list
-}
-/^[*][*]* / {
-	# List item
-	s/*//
-	t list
-}
-/^\.\.* / {
-	# List item
-	s/*//
-	t list
-}
-:endlist
-#
-# Email like quotes
-# We remove the forced line break at the end of an email like quote.
-# The glyph │ is that of U+2502
-/^│/ {
-	s/^││││││/>>>>>>/
-	s/^│││││/>>>>>/
-	s/^││││/>>>>/
-	s/^│││/>>>/
-	s/^││/>>/
-	s/^│/>/
-	s/ +//
-}
-/\n│/ {
-	s/\n││││││/>>>>>>/
-	s/\n│││││/>>>>>/
-	s/\n││││/>>>>/
-	s/\n│││/>>>/
-	s/\n││/>>/
-	s/\n│/>/
-	s/ +//
-}
-s/\n +/\\\\ /
-#
-# Line continuation
-# if the line ends in " +" append the next one unless it be empty
-/ +/ {
-	s/ +/ \\\\ /
-	/[^\n]*\n./ {
-		s/\([^\n]*\)\n\(.*\)/\2\1/
-		$ !b loop
-	}
-}
-# Highlighted source code
-/\[source,[[:alpha:]]\{1,\}]/ {
-	# Drop the next line, that contains ----
-	N
-	s/\n[^\n]*$//
-	# Convert the markup.
-	s/\[source,\([[:alpha:]]\{1,\}\)]/<code \1>/
-	# The next line will be in a Code block.
-	s//&/
-}
-/^\.\.\.\./ {
-	# Drop this line, that begins or end a multi-level quote block.
-	s/[^]*//
-}
-# Code block but not highlighted source code
-/----/ {
-	s/----/<code>/
-	# We are now in a Code block.
-	s//&/
-}
-/\[WARNING]/ {
-	# Drop the next line, that contains "====".
-	N
-	s/\n[^\n]*$//
-	s/\[WARNING]/<note warning>/
-}
-/\[TIP]/ {
-	# Drop the next line, that contains "====".
-	N
-	s/\n[^\n]*$//
-	s/\[TIP]/<note tip>/
-}
-/\[IMPORTANT]/ {
-	# Drop the next line, that contains "====".
-	N
-	s/\n[^\n]*$//
-	s/\[IMPORTANT]/<note important>/
-}
-/\[NOTE]/ {
-	# Drop the next line, that contains "====".
-	N
-	s/\n[^\n]*$//
-	s/\[NOTE]/<note>/
-}
-/|====/ {
-	# End of a table
-	# Drop this line.
-	s/|====//
-	# The next line is not a table row.
-	s///
-}
-/=====* */ {
-	s@^=====* *@</note>@
-	# Just in case someone inserted a forced line break before </note>
-	# in the initial source file in DokuWiki format...
-	s@\\\\ ====*@</note>@
-}
-/\n=====* */ {
-	s@\n=====* *@\n</note>@
-}
-/\[options="autowidth"]/ {
-	# Beginning of a table
-	# Drop this line and the next one, that contains "|====".
-	s/\[options="autowidth"]//
-	N
-	s/\n[^\n]*$//
-	# The next line is a table row.
-	s//&/
-}
-/\[verse]/ {
-	# Multi-level quote begins
-
-	# Drop this line and the next one, that contains "____".
-	s/\n\[verse]//
-	N
-	s/\n[^\n]*$//
-	s//&/
-}
-/____/ {
-	# Multi-level quote ends.
-	# Drop this line
-	s/\n____//
-	s///
-}
-:format
-# Unescape $$[ and ]$$
-s/[$][$]\(\[[^[]\)/\1/g
-s/\([^]]]\)[$][$]/\1/g
-# We assume an even number of $$
-s/\$\$//g
-s/\([^]\{1,\}\)/\1/g
-// {
-	# Unordered lists
-	# ===============
-	s/^* /  * /g
-	s/^*\* /    * /g
-	s/^*\*\* /      * /g
-	s/^*\*\*\* /        * /g
-	s/^*\*\*\*\* /          * /g
-	s/^\. /  - /g
-	s/^\.\. /    - /g
-	s/^\.\.\. /      - /g
-	s/^\.\.\.\. /        - /g
-	s/^\.\.\.\.\. /          - /g
-	# Ordered lists
-	# =============
-	s/\n\* /\n  * /g
-	s/\n\*\* /\n    * /g
-	s/\n\*\*\* /\n      * /g
-	s/\n\*\*\*\* /\n        * /g
-	s/\n\*\*\*\*\* /\n          * /g
-	s/\n\. /\n  - /g
-	s/\n\.\. /\n    - /g
-	s/\n\.\.\. /\n      - /g
-	s/\n\.\.\.\. /\n        - /g
-	s/\n\.\.\.\.\. /\n          - /g
-}
-# Tables
-# ======
-// {
-	# Init of the row
-	# In case the last cell of the row was empty avoid to have a | close
-	# the row apending a space after it.
-	s/|/| /
-	:newline
-	# If there is a line continuation, append the next line.
-	s/\([^+]\) +/\1\\\\ /
-	/\\\\ / {
-		N
-		s/\([^\n]*\)\n\(.*\)/\2\1/
-		b newline
-	}
-		# Un-escape $$[ and ]$$ in the new line.
-		s/[$][$]\(\[[^[]\)/\1/g
-		s/\([^]]]\)[$][$]/\1/g
-		# We assume an even number of $$
-		# We need to do that again because of the just appended line.
-		s/\$\$//g
-		s/\([^]\{1,\}\)/\1/g
-	/[[:graph:]]/ s/\([^|]\)/\1|/
-	:newcell
-	# If it is a heading, tentatively replace the left delimiter with .
-	s/h|\([^|]*[|]\)/\1/
-	# Convert alignment marks
-	# If < (left) remove the space(s) after the left delimiter.
-	s/<\([|]\) *\([^|]*[|]\)/\1\2/
-	# If ^ (center) insert two spaces after the left delimiter and before
-	# the right delimiter.
-	s/\^\([|]\)\([^|]*\)\([|]\)/\1  \2  \3/
-	# If > (right) remove the spaces after the right delimited and insert
-	# two spaces before the left delimiter.
-	/>\([|]\)\([^|]*\)\([|]\)/ {
-		s/  *\([|]\)/\1/
-		s/>\([|][^|]*[|]\)/\1/
-	}
-	# Replace the n+ indicator of horizontal spanning with n right
-	# delimiters.
-	# Cells spanning across up to 9 columns.  I hope that is enough.
-	s/2+\([|][^|]*\)|/\1||/
-	s/3+\([|][^|]*\)|/\1|||/
-	s/4+\([|][^|]*\)|/\1||||/
-	s/5+\([|][^|]*\)|/\1|||||/
-	s/6+\([|][^|]*\)|/\1||||||/
-	s/7+\([|][^|]*\)|/\1|||||||/
-	s/8+\([|][^|]*\)|/\1||||||||/
-	s/9+\([|][^|]*\)|/\1|||||||||/
-	s/2+\([|][^|]*\)/\1/
-	s/3+\([|][^|]*\)/\1/
-	s/4+\([|][^|]*\)/\1/
-	s/5+\([|][^|]*\)/\1/
-	s/6+\([|][^|]*\)/\1/
-	s/7+\([|][^|]*\)/\1/
-	s/8+\([|][^|]*\)/\1/
-	s/9+\([|][^|]*\)/\1/
-	# Remove one space before the (now removed) formatting instructions.
-	# s/ \([|]\)/\1/
-	# Go to adjacent left cell, if any.
-	/|[^|]\{1,\}[|][^|]*[|]/ {
-		s/\(|[^|]*[|]\)\([^|]*[|]\)/\1\2/
-		b newcell
-	}
-	# Else remove the remaining  and replace all  with ^
-	s///
-	s//^/g
-}
-# Headings
-# ========
-s/^\= \([^]*\)/\1/
-s/^\== \([^]*\)/\1/
-s/^\=== \([^]*\)/\1/
-s/^\==== \([^]*\)/\1/
-s/^\===== \([^]*\)/\1/
-s//=/g
-# If // precede DokuWiki style HTML comments, remove // but don't make
-# further substitutions in that line.
-\@// *<!--.*-->@ {
-	s@// \(<!--.*-->\)@\1@
-}
-# Footnotes
-# =========
-# In AsciiDoc syntax a footnote has the form footnote[<text>]footnote.
-# But <text> can include [<this>] and we don't want the converted
-# footnote to stop there. To avoid that we should stop after the first ]
-# that possibly follows a [<this] with no [ between [<this>] and ].
-# To find it we iteratively replace [<this>] with <this>.
-:foot
-s@\([^]*footnote:\[[^]]*\)\[\([^]]*\)]@\1\2@
-s@\([^]*\)footnote:\[\([^[]*\)]@\1((\2))@
-s@^\([^]*footnote:\[[^]]*\)\[\([^]]*\)]@\1\2/@
-s@^\([^]*\)footnote:\[\([^[]*\)]@\1((\2))@
-t foot
-s//[/g
-s//]/g
-s/\[\[//g
-s/]]//g
-# We process the links (that can be found inside a foot note) before the
-# foot notes to avoid confusing ] as "end of link" with "end of foot note".
-s//[]/g
-# Email addresses
-# ===============
-:email
-s/\[]//g
-/<[^ ]\{1,30\}@.\{1,30\}[.][^ ]\{2,8\}>/ !{
-	s/\([^]* \)\([^ ]\{1,30\}@[[:alnum:]\.-]l\{1,30\}[.][^ \n,;.:]\{2,8\}\)/\1<\2>/
-	s/^\([^]* \)\([^ ]\{1,30\}@[[:alnum:]\.-]\{1,30\}[.][^ \n,;.:]\{2,8\}\)/\1<\2>/
-	s/^\([^ ]\{1,30\}@[[:alnum:]\.-]\{1,30\}[.][^ \n,;.:]\{2,8\}\)/<\1>/
-}
-t email
-s//[]/g
-:typo
-# Typographic legal symbols
-# ========================
-s/\([^]*\)(C)/\1(c)/
-s/^\([^]*\)(C)/\1(c)/
-s/\([^]*\)(TM)/\1(tm)/
-s/^\([^]*\)(TM)/\1(tm)/
-s/\([^]*\)(R)/\1(r)/
-s/^\([^]*\)(R)/\1(r)/
-t typo
-# Emphasized
-# ==========
-# Before underlined!
-:emph
-s@\([^]*\)__@\1@
-s@^\([^]*\)__@\1@
-t emph
-# Underlined
-# ==========
-:under
-s/\([^]*\)\[underline]#\([^#]\{1,\}\)#/\1__\2__/
-s/^\([^]*\)\[underline]#\([^#]\{1,\}\)#/\1__\2__/
-t under
-# Strike through
-# ==============
-:strik
-s@\([^]*\)\[line-through]#\([^#]\{1,\}\)#@\1<del>\2</del>@
-s@^\([^]*\)\[line-through]#\([^#]\{1,\}\)#@\1<del>\2</del>@
-t strik
-# Superscript
-# ==========
-# We don't convert ^-^ as it is a smiley for Dokuwiki.
-s/\^_^//g
-:sup
-s@\([^]*\)\^\([^^ ]\{1,\}\)^@\1<sup>\2</sup>@
-s@^\([^]*\)\^\([^^ ]\{1,\}\)^@\1<sup>\2</sup>@
-t sup
-s//^_^/g
-# Subscript
-# ==========
-# We don't convert ~~<something>~~ as it is a plug-in in DokuWiki.
-# We don't convert ~ inside an URL.
-:sub
-/~~[^~]\{1,\}~~/ !{
-	\.[hf]t\{1,2\}ps\{0,1\}://[[:graph:]]*~. !{
-		s@\([^]*\)~\([^~ ]\{1,\}\)~@\1<sub>\2</sub>@
-		s@^\([^]*\)~\([^~ ]\{1,\}\)~@\1<sub>\2</sub>@
-	}
-}
-t sub
-# Ruler
-# =====
-# Before the double quotation marks!
-s/^'''/----/
-# Double quotation marks
-# ========================
-:doubl
-s/\([^]*\)``/\1"/
-s/^\([^]*\)``/\1"/
-s/\([^]*\)''/\1"/
-s/^\([^]*\)''/\1"/
-t doubl
-# Single quotation marks
-# ========================
-:singl
-s/\([^]*\)`/\1'/
-s/^\([^]*\)`/\1'/
-t singl
-#  Monospaced
-#  ==========
-s/+++++/''+''/g
-s/++//g
-:mono
-s/\([^]*\)\([^\n]\{1,\}\)/\1''\2''/
-s/\([^]*\)\([^\n]\{1,\}\)/\1''\2''/
-t mono
-s//++/g
-# Images
-# ======
-:images
-# Image::<image spec> becomes $DKIMAGES<image spec>
-# unless <image spec> includes an external link. We assume that only
-# external links includes <solidus> in the target.
-s@\([^]*\)image::\([^[/ ]*\[[^]]*]\)@\1 DKIMAGES\2@
-s@\([^]*\)image::\([^[/ ]*\[[^]]*]\)@\1 DKIMAGES\2@
-s@\([^]*\)image::\([^[ ]*\[[^]]*]\)@\1 \2@
-s@\([^]*\)image::\([^[ ]*\[[^]]*]\)@\1 \2@
-t images
-# image::<target>[] becomes {{<target>}}.
-# No further processing then.
-s@\([^[ ]*\)\[]@{{\1}}@
-# image::<target>[<arguments>] becomes
-# image::<target>?[<arguments>].
-s@\([^[ ]*\)\(\[[^]]\{1,\}]\)@\1?\2@
-# Remove all <comma> in [<arguments>].
-:commas
-s@\([^]*\),\([^]*\)@\1\2@
-t commas
-# Convert aligments (a second step will occur later in case of an alt text
-# as then the alignment space should precede the <vertical bar> not the
-# closing "}}" in DokuWiki syntax.
-s@\([^[ ]*\[[^]]*\)align="center"\([^]]*]\)@ \1\2 @
-s@\([^[ ]*\[[^]]*\)align="left"\([^]]*]\)@\1\2 @
-s@\([^[ ]*\[[^]]*\)float="left"\([^]]*]\)@\1\2 @
-s@\([^[ ]*\[[^]]*\)align="right"\([^]]*]\)@ \1\2@
-s@\([^[ ]*\[[^]]*\)float="right"\([^]]*]\)@ \1\2@
-# Convert the dimensions.
-s@\([^[]*\)\(\[[^]]*\)width="\([^"]*\)"height="\([^"]*\)"\([^]]*\)\(] *\)@\1\3x\4\2\5\6@
-s@\([^[]*\)\(\[[^]]*\)height="\([^"]*\)"\([^]]*\)\(] *\)@\10x\3\4\2\4\5@
-s@\([^[]*\)\(\[[^]]*\)width="\([^"]*\)"\([^]]*\)\(] *\)@\1\3\4\2\4\5@
-# Convert the linking instructions.
-s@\([^[]*?\)\(\[\[^]]*\)link="\([^"]*\)"\([^]]*] *\)@\1direct[\2\4@
-s@\([^[]*?[^[]*\)\(\[[^]]*\)link="\([^"]*\)"\([^]]*] *\)@\1\&direct\2\4@
-# Convert the alt text and move the alignment space that possibly
-# preceded the closing  before the <vertical bar>. 
-s@\([^[]*\)\["\([^"]*\)"]\( *\)@\1\3|\2[]@
-# Remove ? after the <target> in case of no linking or dimensions
-# arguments
-s@\([^?]*\)?\[@\1[@
-# In case of only one argument, remove & after ?
-s@\([^?]*?\)&@\1@
-# Remove the square brackets that surrounded the <arguments> and replace
-# the opening and closing  by {{ and }} respectively. 
-s@\([^[]*\)\[]\([^]*\)@{{\1\2}}@
-t images
-# Internal links
-# ==============
-s/link:\([^[ ]*\)\[\1]/[[\1]]/g
-s/link:\([^[ ]*\)\[\([^[]*\)]/[[\1|\2]]/g
-# External Links
-#================
-# URLs can include the pattern []. We will tentatively replace it by 
-s/\[]//g
-s@://@@g
-:links
-# http://<some>/http://<other>|text becomes tentatively:
-# http://<some>/http<other>|text so we convert it to
-# [[http://<some>/http://<other>|<text>]], not to:
-# http://<some>/[[http://<other>|<text>]]
-# //http://docs.slackware.com/slackware:multilib[multilib]//.
-# Links in the form http://resource[text] become [[http://resource|text]]
-s@\([^]\{1,\}\)\([^]\{1,\}\)@\1://\2@
-s@\([^]*\)\([hf]t\{1,2\}ps\{0,1\}://[^[[:space:]]\{1,\}\)\[\([^]]\{1,\}\)]@\1\2|\3@
-s@^\([^]*\)\([hf]t\{1,2\}ps\{0,1\}://[^[[:space:]]\{1,\}\)\[\([^]]\{1,\}\)]@\1\2|\3@
-t links
-s@@://@g
-# Now process the "usual" links
-:links2
-s@\([^]*\)\([hf]t\{1,2\}ps\{0,1\}://[^[[:space:]]\{1,\}\)\[\([^]]\{1,\}\)]@\1\2|\3@
-s@^\([^]*\)\([hf]t\{1,2\}ps\{0,1\}://[^[[:space:]]\{1,\}\)\[\([^]]\{1,\}\)]@\1\2|\3@
-t links2
-s//[]/g
-:print
-s///
-s/ +\([\n]\)/\\\\\1/g
-s/\\|/|/g
-s/\\{\\{/{{/
-# Do not print consecutive empty lines, but in a Literal block
-/^/ {
-	// !{
-		/.*empty.*/ {
-			h
-			d
-		}
-		s//&empty/
-	}
-}
-/./ s/\(.*\)empty/\1/
-h
-x
-# Keep only the baton
-s/[^]*//
-x
-# Un-escape DokuWiki comments
-s/\(<!--.*-->\)/\1/
-s@@//@g
-s//%%/g
-s//%%/g
-s//[[/g
-s//]]/g
-# Arbitrary, but what can I do ?
-s@%%@<nowiki>%%</nowiki>@g
-s@%%%%%%@<nowiki>%%</nowiki>@g
-s/\(\[[^\[]\)/\1/g
-s/\([^]]]\)/\1/g
-s//%%/g
-# remove the baton before printing the line
-s/[].*//g
-# Remove the zero width spaces U+200B that could break the layout, but
-# inside <code [^>]*> or </code>. In that aim replace tentatively <U+200B>
-# by  in these marks.
-s@<​code\( [^>]*\)>@<code\1>@g
-s@<​/code>@</code>@g
-s/​//g
-s@<code\( [^>]*\)>@<​code\1>@g
-s@</code>@<​/code>@g
 #
 #@EOF@ -----------------------------------------------------------------
 #
