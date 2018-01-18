@@ -1680,7 +1680,7 @@ t media
 
 	# ?direct is used to make the image clickable, link points to the full image.
 	/[^[]*[?&]direct[^]*/ {
-		s@\([^?[]*\)?[^]]*@&,link="\1"@
+		s@[/:]\?\([^?[]*\)?[^]]*@&,link="{imagesdir}/\1"@
 	}
 
 	# ?linkonly means that the media is not displayed inline, so we convert it
