@@ -1309,6 +1309,7 @@ s/[]//g
 # OC  :: right single quotation mark: ' => ^L => `'
 # 0E  :: left double quotation mark: " => ^N => "`
 # 0F  :: right double quotation mark: " => ^O => `"
+# 10  :: ` constrained mono-spaced
 # 11  :: various tentative replacements
 # 12  :: tentatively replaces "|" in tables f no cell boundary,
 #          then escaped as "\" once converted.
@@ -1324,7 +1325,6 @@ s/[]//g
 # 1A  :: ] then ++]++
 # 1D  :: tentative beginning and end of image:target[attributes]
 # 1E  :: last line was /^\n$/
-# 1F  :: ` constrained mono-spaced
 # 91  :: start of link to be processed by rewrite-links script
 # 92  :: end of link to be processed by rewrite-links script
 
@@ -2144,7 +2144,7 @@ s/--/–/g  # U+2013
 
 # Replace unconstrained ``mono-spaced`` marks with constrained `mono-spaced`.
 /[^]*/ {
-	s/\(^\|[^[:alnum:]:;}_]\)\(\?[[:graph:]]\)\([^]*[[:graph:]]\)\?\(\?[^[:alnum:]]\)/\1\2\3\4/g
+	s/\(^\|[^[:alnum:]:;}_]\)\(\?[[:graph:]]\)\([^]*[[:graph:]]\)\?\(\?[^[:alnum:]]\)/\1\2\3\4/g
 }
 
 
@@ -2177,11 +2177,11 @@ s//LS_QUOTE/g
 s//RS_QUOTE/g
 s//LD_QUOTE/g
 s//RD_QUOTE/g
+s//`/g
 # Restore the [source,<language>] and [verse] patterns.
 s//[[/g
 s//]]/g
 s///g
-s//`/g
 s///g
 
 h
