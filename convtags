@@ -1704,7 +1704,7 @@ t media
 			t media  # we're done with this link
 		}
 		# External link
-		s@/\([^[]\+\)\["\([^"]*\)"[^]]*\]@link:\1[\2]@
+		s@/\([^[]\+\)\["\([^"]*\)"[^]]*\]@\1[\2]@
 		t media  # we're done with this link
 
 		# NOTE: We don't use unconditional jump (b) here, because it may cause
