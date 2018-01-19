@@ -1678,15 +1678,33 @@ t media
 		s@xref:\([^[ ]*\)\[\([^]]*\)\]\]@\2,link="\1"]@
 	}
 
-	# ?direct is used to make the image clickable, link points to the full image.
-	/[^[]*[?&]direct[^]*/ {
-		s@[/:]\?\([^?[]*\)?[^]]*@&,link="{imagesdir}/\1"@
-	}
-
 	# ?linkonly means that the media is not displayed inline, so we convert it
 	# to just plain link.
 	/[^[]*[?&]linkonly[^]*/ {
-		s@[/:]\?\([^?&[]\+\)[?&][^[]*\["\([^"]*\)"[^]*@link:{imagesdir}/\1[\2]@
+		b media-linkonly
+	}
+
+	# If link is not an image (based on the file extension),
+	# convert it to a normal link.
+	/[^?[]*IMAGE_FILE_PATT[?[][^]*/I !{
+		:media-linkonly
+
+		# If title is empty, use file name (not a complete path) as the title.
+		/[^[]\+\[""[^]*/ {
+			s@\([^:/ ]\+\)\[""\([^]]*\]\)@\1["\1"\2@
+		}
+		s@/\?\([^?[]\+\)[?]*[^[]*\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
+
+		# We're done with this media link, process the next one...
+		# Note: We don't use unconditional jump (b), because it may cause
+		# inifinite loop when parsing malformed media link.
+		t media
+	}
+	# Otherwise continue with processing an image...
+
+	# ?direct is used to make the image clickable, link points to the full image.
+	/[^[]*[?&]direct[^]*/ {
+		s@[/:]\?\([^?[]*\)?[^]]*@&,link="{imagesdir}/\1"@
 	}
 
 	# Dimensions
@@ -1706,30 +1724,17 @@ t media
 		s@[^[]*[&?][^x[:digit:][]*\([[:digit:]]\+\)[^]]*@&,width="\1"@
 	}
 
-	# Image
-	/[^?[]*IMAGE_FILE_PATT[?[][^]*/I {
-		# Remove empty alt text.
-		s/\([^]*\)\("",\?\)/\1/g
+	# Remove empty alt text.
+	s/\([^]*\)\("",\?\)/\1/g
 
-		# Use block image if there's nothing else on the line,
-		/^ *[^]\+ */ {
-			s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@\nimage::\1\2@
-		}
-		# ...otherwise use inline image.
-		# XXX: align is ignored for inline images!
-		/^ *[^]\+ */ !{
-			s@ \?\([^?[]*\)[?]*[^[]*\(\[[^]*\) \?@ image:\1\2 @
-		}
+	# Use block image if there's nothing else on the line,
+	/^ *[^]\+ */ {
+		s@\([^?[]*\)[?]*[^[]*\(\[[^]*\)@\nimage::\1\2@
 	}
+	# ...otherwise use inline image.
+	# XXX: align is ignored for inline images!
+	s@ \?\([^?[]*\)[?]*[^[]*\(\[[^]*\) \?@ image:\1\2 @
 
-	# Other media
-	/[^?[]*IMAGE_FILE_PATT[?[][^]*/I !{
-		# If title is empty, use file name (not complete path) as the title.
-		/[^[]\+\[""[^]*/ {
-			s@\([^:/ ]\+\)\[""\([^]]*\]\)@\1["\1"\2@
-		}
-		s@/\?\([^?[]\+\)[?]*[^[]*\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
-	}
 	t media
 }
 :endlinks
