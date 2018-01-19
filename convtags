@@ -1689,11 +1689,14 @@ t media
 	/[^?[]*IMAGE_FILE_PATT[?[][^]*/I !{
 		:media-linkonly
 
+		# Remove query part of the link (as DokuWiki do).
+		s/\([^?[]\+\)?[^[]*\(\[[^]*\)/\1\2/
+
 		# If title is empty, use file name (not a complete path) as the title.
 		/[^[]\+\[""[^]*/ {
 			s@\([^:/ ]\+\)\[""\([^]]*\]\)@\1["\1"\2@
 		}
-		s@/\?\([^?[]\+\)[?]*[^[]*\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
+		s@/\?\([^[]\+\)\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
 
 		# We're done with this media link, process the next one...
 		# Note: We don't use unconditional jump (b), because it may cause
