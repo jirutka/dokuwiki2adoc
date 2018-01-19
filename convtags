@@ -1700,7 +1700,7 @@ t media
 		# Internal link
 		# XXX: We have replaced // with , but only for http(s), ftp(s). (why?)
 		/[[:alnum:]+-.]\+:\(\|\/\/\)[^]*/! {
-			s@/\?\([^[]\+\)\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
+			s@/\?\([^[]\+\)\["\([^"]*\)"[^]]*\]@link:{imagesdir}\1[\2]@
 			t media  # we're done with this link
 		}
 		# External link
@@ -1721,7 +1721,7 @@ t media
 		}
 		# Internal link
 		/[[:alnum:]+-.]\+:\(\|\/\/\)[^]*/! {
-			s@[/:]\?\([^?[]*\)?[^]]*@&,link="{imagesdir}/\1"@
+			s@\([^?[]*\)?[^]]*@&,link="{imagesdir}\1"@
 		}
 	}
 
