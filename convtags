@@ -1696,18 +1696,33 @@ t media
 		/[^[]\+\[""[^]*/ {
 			s@\([^:/ ]\+\)\[""\([^]]*\]\)@\1["\1"\2@
 		}
-		s@/\?\([^[]\+\)\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
 
-		# We're done with this media link, process the next one...
-		# Note: We don't use unconditional jump (b), because it may cause
-		# inifinite loop when parsing malformed media link.
-		t media
+		# Internal link
+		# XXX: We have replaced // with , but only for http(s), ftp(s). (why?)
+		/[[:alnum:]+-.]\+:\(\|\/\/\)[^]*/! {
+			s@/\?\([^[]\+\)\["\([^"]*\)"[^]]*\]@link:{imagesdir}/\1[\2]@
+			t media  # we're done with this link
+		}
+		# External link
+		s@/\([^[]\+\)\["\([^"]*\)"[^]]*\]@link:\1[\2]@
+		t media  # we're done with this link
+
+		# NOTE: We don't use unconditional jump (b) here, because it may cause
+		# an inifinite loop when parsing malformed media link.
 	}
 	# Otherwise continue with processing an image...
 
 	# ?direct is used to make the image clickable, link points to the full image.
 	/[^[]*[?&]direct[^]*/ {
-		s@[/:]\?\([^?[]*\)?[^]]*@&,link="{imagesdir}/\1"@
+		# External link
+		# XXX: We have replaced // with , but only for http(s), ftp(s). (why?)
+		/[[:alnum:]+-.]\+:\(\|\/\/\)[^]*/ {
+			s@\([^?[]*\)?[^]]*@&,link="\1"@
+		}
+		# Internal link
+		/[[:alnum:]+-.]\+:\(\|\/\/\)[^]*/! {
+			s@[/:]\?\([^?[]*\)?[^]]*@&,link="{imagesdir}/\1"@
+		}
 	}
 
 	# Dimensions
