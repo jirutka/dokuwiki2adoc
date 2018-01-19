@@ -56,6 +56,11 @@ def process_target(target, page_dir):
     if not target:
         return target
 
+    # If target is an external URL (starts with a protocol, e.g. https://),
+    # don't modify it.
+    if re.match('^[\w+-]+://', target):
+        return target
+
     if target == '{imagesdir}':
         return path.relpath('/media' + page_dir, page_dir)
 
