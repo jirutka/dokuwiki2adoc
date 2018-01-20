@@ -1,9 +1,6 @@
 #!/bin/sh
 # vim: set fileencoding=utf-8:
 #
-# convtags is a bidirectional converter beetween DokuWiki and AsciiDoc
-# formatted text files. See http://slint.fr/misc/convtags/README
-#
 # Copyright (C) Didier Spaier 2015, Paris, France
 # Copyright (C) Jakub Jirutka 2017, Prague, Czech Republic
 # All rights reserved.
@@ -25,82 +22,60 @@
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-#                           Overview
-# ----------------------------------------------------------------------
-#   Settings 
-#   User interface
-# ------------------ Line tagged @part1@ -------------------------------
-#   Conversion DokuWiki to AsciiDoc (part 1)
-# ------------------ Line tagged @part2@ -------------------------------
-#   Conversion DokuWiki to AsciiDoc (part 2)
-# ------------------ Line tagged @EOF@  --------------------------------
-#   Information about support
-# ----------------------------------------------------------------------
-# 
-VERSION=1
-DATE=04/10/2015
-
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
-
+#---help---
+# Usage:
+#   convtags [options] [--] INPUT OUTPUT
+#   convtags [-h|-V]
 #
-# Configuration
-# =============
-# 
-# We provide no configuration file. To create one, just type:
-#   convtags config > [configuration file]
-# then edit your configuration file to customize the settings.
-# 
-# To use your configuration file, set it as CONFIGFILE in the command
-# line, for instance:
-#   CONFIGFILE=~/convtagsrc convtags ...
+# Converter from DokuWiki to AsciiDoc (Asciidoctor) format.
 #
-# CONFIGFILE is set to a null string by default.
+# Options and environment variables:
 #
-CONFIGFILE=${CONFIGFILE:-}
+#   --dw-media-uri DW_MEDIA_URI
+#        Base URI of the images path of the DokuWiki instance *without* the
+#        protocol part (e.g. https://).  The purpose is the same as for
+#        --dw-root-uri.  Defaults to: $DW_ROOT_URI/_media (if $DW_ROOT_URI).
 #
-# DKROOT is the absolute URL of the DokuWiki remote server *without* protocol
-# (https:// or http://).
-# Setting it allows you to replace the internal links in a DokuWiki page
-# by corresponding external links in the converted AsciiDoc page, thus
-# allowing to check them.
-# When converting back to DokuWiki the absolute URLs are kept.
+#   -d --dw-root-uri DW_ROOT_URI
+#        Base URI of the DokuWiki instance *without* the protocol part (e.g.
+#        https://).  This is used to replace external links pointing to this
+#        DokuWiki instance with equivalent internal links.
 #
-DKROOT=${DKROOT:-}
+#   --image-exts IMAGE_EXTS...
+#        A space or comma separated file extensions that identify image files.
+#        Media {{links}} with such file extension will be converted to image:[]
+#        or image::[] macro, others to just link:[].
+#        Defaults to: gif jpg jpeg png svg.
 #
-# DKIMAGES is the absolute URL of the images' sub-directory of the
-# DokuWiki installation *without* protocol (https:// or http://).
-# Setting it allows you to display in the converted AsciiDoc page the
-# images linked as internal in the DokuWiki pages, and optionally to
-# keep the full URL of the images in the converted back DokuWiki pages.
+#   -l --links-filter LINKS_FILTER
+#        Path of the script to use for filtering (rewriting) links.
 #
-DKIMAGES=${DKIMAGES:-}
+#   -Q --quotes-type QUOTES_TYPE
+#        Specifies type of the quotation marks to convert 'single' and "double"
+#        quotes to.  Available types are:
+#          - plain       :  'single'   "double"  (default)
+#          - asciidoctor : '`single`' "`double`"
+#          - unicode-en  :  ‘single’   “double”
+#          - unicode-cs  :  ‚single‘   „double“
 #
-# IMAGEEXTS is a comma separated list of file extensions (without a dot) that
-# are acceptable for image::[] directive. Other media will be converted just
-# to link:[].
+#   --sed SED
+#        Sed program to use. Defaults to: sed.
 #
-IMAGEEXTS=${IMAGEEXTS:-gif,jpg,jpeg,png,svg}
+#   -h --help
+#        Print this message and exit.
 #
-# QUOTESTYPE specifies what type of quotation marks use in Asciidoc output.
-# Options:
-#   asciidoctor - '`single`', "`double`"
-#   plain       - 'single', "double"
-#   unicode-en  - ‘single’, ‘double’
-#   unicode-cs  - ‚single‘, „double“
+#   -V --version
+#        Print the program version and exit.
 #
-QUOTESTYPE=${QUOTESTYPE:-asciidoctor}
-#
-# REWRITE_LINKS is path of the script for post-processing internal links.
-#
-REWRITE_LINKS=${REWRITE_LINKS:-$SCRIPT_DIR/rewrite-links}
-#
-# SED is a sed command to use.
-#
-SED=${SED:-sed}
-#
-# End of configuration
-
+# Each option can be also provided by environment variable.  If both option and
+# variable is specified and the option accepts only one argument, then the
+# option takes precedence.
+#---help---
 set -eu
+
+PROGNAME='convtags'
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+VERSION=1
 
 # Sed commands for polishing the output.
 FINALIZE_SED=$(cat <<'__EOF__'
@@ -136,45 +111,10 @@ FINALIZE_SED=$(cat <<'__EOF__'
 __EOF__
 )
 
-# Gather the settings in the configuration file if provided by the user.
-# The settings in that file override those above.
-if [ "$CONFIGFILE" ]; then
-	if [ -f "$CONFIGFILE" ]; then
-		. "$CONFIGFILE"
-	else
-		echo "The configuration file $CONFIGFILE was not found." >&2
-		exit 1
-	fi
-fi
-
-# Insure that the paths will end up without trailing <solidus>.
-DKROOT=${DKROOT%/}
-DKIMAGES=${DKIMAGES%/}
-
-IMAGE_FILE_PATT="\\\\.\\\\($(echo "$IMAGEEXTS" | $SED 's/,/\\\\|/g')\\\\)"
-
-case "$QUOTESTYPE" in
-	asciidoctor) LS_QUOTE="'\`" RS_QUOTE="\`'" LD_QUOTE='"`' RD_QUOTE='`"';;
-	unicode-en) LS_QUOTE='‘' RS_QUOTE='’' LD_QUOTE='“' RD_QUOTE='”';;
-	unicode-cs) LS_QUOTE='‚' RS_QUOTE='‘' LD_QUOTE='„' RD_QUOTE='“';;
-	*) LS_QUOTE="'" RS_QUOTE="'" LD_QUOTE='"' RD_QUOTE='"';;
-esac
-
 help() {
-	cat >&2 <<-EOF
-	  convtag: converter from DokuWiki to AsciiDoc
-
-	  Usage: convtags da [DokuWiki file] [AsciiiDoc file]
-	         convtags config   # information about configuration settings
-	         convtags settings # display current settings
-	         convtags support  # how to get support
-
-	  Visit http://slint.fr/misc/convtags to know more and get the current
-	  release.
-
-	  This is convtags version $VERSION released on $DATE.
-	EOF
-	exit 1
+	$SED -En '/^#---help---/,/^#---help---/p' "$0" \
+		| sed -E 's/^# ?//; 1d;$d;'
+	exit ${1:-0}
 }
 
 dw2adoc() {
@@ -193,8 +133,8 @@ dw2adoc() {
 	rm -f "$cleaned_tmp"
 
 	$SED -ne "$(< "$0" $SED -n "/^#@part2@/,/^#@EOF@/p" \
-			| $SED "sDKROOT${DKROOT:-#@#@#}g" \
-			| $SED "sDKIMAGES${DKIMAGES:-#@#@#}g" \
+			| $SED "sDW_ROOT_URI${DW_ROOT_URI:-#@#@#}g" \
+			| $SED "sDW_MEDIA_URI${DW_MEDIA_URI:-#@#@#}g" \
 			| $SED "sLS_QUOTE$LS_QUOTEg" \
 			| $SED "sRS_QUOTE$RS_QUOTEg" \
 			| $SED "sLD_QUOTE$LD_QUOTEg" \
@@ -202,48 +142,53 @@ dw2adoc() {
 			| $SED "sIMAGE_FILE_PATT$IMAGE_FILE_PATTg")" \
 		"$asciidoc_tmp" \
 			| $SED -ne "$FINALIZE_SED" \
-			| $REWRITE_LINKS "$(dirname "$1")" > "$2"
+			| $LINKS_FILTER "$(dirname "$1")" > "$2"
 
 	rm -f "$asciidoc_tmp"
 }
 
-case "${1:-}" in
-	settings)
-		cat <<-EOF
-		  Current settings:
-		  CONFIGFILE=$CONFIGFILE
-		  DKROOT=$DKROOT
-		  DKIMAGES=$DKIMAGES
-		  IMAGEEXTS=$IMAGEEXTS
-		  QUOTESTYPE=$QUOTESTYPE
-		  REWRITE_LINKS=$REWRITE_LINKS
-		  SED=$SED
-  
-		  You are using convtags version $VERSION released on $DATE
-  
-		  Type "convtags config" to know more.
-		EOF
-	;;
-	config)
-		< "$0" $SED -n '/^# Configuration/,/^# End of configuration/p' \
-			| $SED '1s/^/\n/' \
-			| $SED '$d' \
-			| $SED 's/^#/ /'
-	;;
-	support)
-		< "$0" $SED -n '/^# Support/,/^# End of support/p' \
-			| $SED '1s/^/\n/' \
-			| $SED '$d' \
-			| $SED 's/^#/ /'
-	;;
-	da)
-		[ $# -eq 3 ] || help
-		dw2adoc "$2" "$3"
-	;;
-	*)
-		help
-	;;
+: ${DW_MEDIA_URI:=}
+: ${DW_ROOT_URI:=}
+: ${LINKS_FILTER:="$SCRIPT_DIR/rewrite-links"}
+: ${SED:=sed}
+
+while [ $# -gt 0 ]; do
+	n=2
+	case "$1" in
+		     --dw-media-uri) DW_MEDIA_URI="$2";;
+		-d | --dw-root-uri) DW_ROOT_URI="$2";;
+		     --image-exts) IMAGE_EXTS="${IMAGE_EXTS:-} $2";;
+		-l | --links-filter) LINKS_FILTER="$2";;
+		-Q | --quotes-type) QUOTES_TYPE="$2";;
+		     --sed) SED="$2";;
+		-h | --help) help 0;;
+		-V | --version) echo "$PROGNAME: $VERSION"; exit 0;;
+		--) shift; break;;
+		-*) echo "$PROGNAME: unknown option: $1" >&2; help 1 >&2;;
+		*) break;;
+	esac
+	shift $n
+done
+
+# Remove trailing slash.
+DW_ROOT_URI=${DW_ROOT_URI%/}
+DW_MEDIA_URI=${DW_MEDIA_URI%/}
+
+if [ "$DW_ROOT_URI" ] && [ -z "$DW_MEDIA_URI" ]; then
+	DW_MEDIA_URI="$DW_ROOT_URI/_media"
+fi
+
+IMAGE_FILE_PATT="\\\\.\\\\($(echo "${IMAGE_EXTS:-"gif jpg jpeg png svg"}" \
+	| $SED 's/[, ]\+/\\\\|/g')\\\\)"
+
+case "${QUOTES_TYPE:-"plain"}" in
+	asciidoctor) LS_QUOTE="'\`" RS_QUOTE="\`'" LD_QUOTE='"`' RD_QUOTE='`"';;
+	unicode-en) LS_QUOTE='‘' RS_QUOTE='’' LD_QUOTE='“' RD_QUOTE='”';;
+	unicode-cs) LS_QUOTE='‚' RS_QUOTE='‘' LD_QUOTE='„' RD_QUOTE='“';;
+	*) LS_QUOTE="'" RS_QUOTE="'" LD_QUOTE='"' RD_QUOTE='"';;
 esac
+
+dw2adoc "$1" "$2"
 
 exit
 
@@ -1499,7 +1444,7 @@ s/~~[[:alnum:]]\+~~//g
 
 # Replace absolute links to pages on DokuWiki with internal links (but w/o
 # converting "/" to ":").
-s@ *https\?:DKROOT/\([^]\+\)@\1@g
+s@ *https\?:DW_ROOT_URI/\([^]\+\)@\1@g
 
 # ---------------------------------------------------------------------------- #
 #                                External links                                #
@@ -1652,7 +1597,7 @@ t media
 
 	# Replace absolute link to media on DokuWiki with internal link (but w/o
 	# converting "/" to ":").
-	s@https\?:DKIMAGES/\([^]\+\)@/\1@
+	s@https\?:DW_MEDIA_URI/\([^]\+\)@/\1@
 
 	# Handle image link
 	#
@@ -2216,29 +2161,3 @@ s/.*//
 p
 #
 #@EOF@ -----------------------------------------------------------------
-#
-# Support
-# =======
-#
-# The most recent information about convtags and the current release are
-# available at http://slint.fr/misc/convtags
-#
-# Please address all bug reports, questions and proposed enhancements to
-# me: didier [at] slint [dot] fr
-# 
-# To make sure that your email be answered, please include the word
-# "convtags" in the subject line.
-#
-# If possible attach the file to be converted and indicate which command
-# and what settings you used for the conversion, so that I can try to
-# reproduce the bug. And make sure that the input file is of the relevant
-# type for the intended conversion, that else will certainly fail.
-# It happened to me several times ;)
-#
-# Also check that you are using the current release of this program,
-# comparing its version displayed typing "convtags" with the most recent
-# one indicated in http://slint.fr/misc/convtags/ChangeLog
-#
-# Didier Spaier, Paris 04/10/2015
-#
-# End of support
