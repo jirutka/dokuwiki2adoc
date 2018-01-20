@@ -129,7 +129,7 @@ dw2adoc() {
 	# 1.2 Also ensure that the file does not end with a comment ("*/"). This is
 	#     needed for detection of unterminated comment to work correctly.
 	# 2.  Run the first part of the conversion.
-	$SED -e "s/[​]//g" \
+	$SED -e "s/[---​]//g" \
 		-e '$ s/$/\n\n/' < "$1" \
 		| $SED "$PART1_SED" > "$tmpfile1"
 
