@@ -65,7 +65,7 @@ CONFIGFILE=${CONFIGFILE:-}
 # allowing to check them.
 # When converting back to DokuWiki the absolute URLs are kept.
 #
-DKROOT=${DKROOT:-docs.slackware.com}
+DKROOT=${DKROOT:-}
 #
 # DKIMAGES is the absolute URL of the images' sub-directory of the
 # DokuWiki installation *without* protocol (https:// or http://).
@@ -73,7 +73,7 @@ DKROOT=${DKROOT:-docs.slackware.com}
 # images linked as internal in the DokuWiki pages, and optionally to
 # keep the full URL of the images in the converted back DokuWiki pages.
 #
-DKIMAGES=${DKIMAGES:-docs.slackware.com/_media}
+DKIMAGES=${DKIMAGES:-}
 #
 # IMAGEEXTS is a comma separated list of file extensions (without a dot) that
 # are acceptable for image::[] directive. Other media will be converted just
@@ -147,9 +147,9 @@ if [ "$CONFIGFILE" ]; then
 	fi
 fi
 
-# Insure that the paths will end up with one trailing <solidus>.
-DKROOT=${DKROOT%/}/
-DKIMAGES=${DKIMAGES%/}/
+# Insure that the paths will end up without trailing <solidus>.
+DKROOT=${DKROOT%/}
+DKIMAGES=${DKIMAGES%/}
 
 IMAGE_FILE_PATT="\\\\.\\\\($(echo "$IMAGEEXTS" | $SED 's/,/\\\\|/g')\\\\)"
 
@@ -193,8 +193,8 @@ dw2adoc() {
 	rm -f "$cleaned_tmp"
 
 	$SED -ne "$(< "$0" $SED -n "/^#@part2@/,/^#@EOF@/p" \
-			| $SED "sDKROOT$DKROOTg" \
-			| $SED "sDKIMAGES$DKIMAGESg" \
+			| $SED "sDKROOT${DKROOT:-#@#@#}g" \
+			| $SED "sDKIMAGES${DKIMAGES:-#@#@#}g" \
 			| $SED "sLS_QUOTE$LS_QUOTEg" \
 			| $SED "sRS_QUOTE$RS_QUOTEg" \
 			| $SED "sLD_QUOTE$LD_QUOTEg" \
@@ -1499,7 +1499,7 @@ s/~~[[:alnum:]]\+~~//g
 
 # Replace absolute links to pages on DokuWiki with internal links (but w/o
 # converting "/" to ":").
-s@ *https\?:DKROOT\([^]\+\)@\1@g
+s@ *https\?:DKROOT/\([^]\+\)@\1@g
 
 # ---------------------------------------------------------------------------- #
 #                                External links                                #
@@ -1652,7 +1652,7 @@ t media
 
 	# Replace absolute link to media on DokuWiki with internal link (but w/o
 	# converting "/" to ":").
-	s@https\?:DKIMAGES\([^]\+\)@/\1@
+	s@https\?:DKIMAGES/\([^]\+\)@/\1@
 
 	# Handle image link
 	#
