@@ -77,40 +77,6 @@ PROGNAME='convtags'
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 VERSION=1
 
-# Sed commands for polishing the output.
-FINALIZE_SED=$(cat <<'__EOF__'
-	# Remove leading empty lines.
-	/./,$!d
-	# On first non-empty line...
-	0,/./ {
-		# if is a title...
-		/^= [^\w\n]/ {
-			# append imagesdir attribute after the title.
-			s|$|\n:imagesdir: {imagesdir}|
-		}
-		# if is not a title...
-		/^= [^\w\n]/ !{
-			# append imagesdir attribute before the non-empty first line.
-			s|^|:imagesdir: {imagesdir}\n\n|
-		}
-	}
-	# Squeez empty lines and remove trailing empty lines.
-	/^$/ !{
-		x
-		/\n/ {
-			s/^\n//
-			# Squeez 2+ empty lines into 2.
-			s/\n\{2,\}/\n/
-			p
-			s/.*//
-		}
-		x
-		p
-	}
-	/^$/H
-__EOF__
-)
-
 help() {
 	$SED -En '/^#---help---/,/^#---help---/p' "$0" \
 		| sed -E 's/^# ?//; 1d;$d;'
@@ -135,7 +101,7 @@ dw2adoc() {
 
 	# Run the second part of the conversion.
 	$SED -ne "$PART2_SED" "$tmpfile1" \
-		| $SED -ne "$FINALIZE_SED" \
+		| $SED -ne "$PART3_SED" \
 		| $LINKS_FILTER "$(dirname "$1")" > "$tmpfile2"
 	cat "$tmpfile2" > "$2"
 
@@ -194,6 +160,8 @@ PART2_SED=$($SED -n \
 		-e "sRD_QUOTE$RD_QUOTEg" \
 		-e "sIMAGE_FILE_PATT$IMAGE_FILE_PATTg" \
 		-e '/^#-----BEGIN PART 2-----/,/^#-----END PART 2-----/p' < "$0")
+PART3_SED=$($SED -n \
+		-e '/^#-----BEGIN PART 3-----/,/^#-----END PART 3-----/p' < "$0")
 
 dw2adoc "$1" "$2"
 
@@ -2168,3 +2136,43 @@ s/.*//
 p
 #
 #-----END PART 2-----
+
+
+# ############################################################################ #
+#                                    PART 3                                    #
+# ############################################################################ #
+
+#-----BEGIN PART 3-----
+
+# Remove leading empty lines.
+/./,$!d
+
+# On first non-empty line...
+0,/./ {
+	# if is a title...
+	/^= [^\w\n]/ {
+		# append imagesdir attribute after the title.
+		s|$|\n:imagesdir: {imagesdir}|
+	}
+	# if is not a title...
+	/^= [^\w\n]/ !{
+		# append imagesdir attribute before the non-empty first line.
+		s|^|:imagesdir: {imagesdir}\n\n|
+	}
+}
+
+# Squeez empty lines and remove trailing empty lines.
+/^$/ !{
+	x
+	/\n/ {
+		s/^\n//
+		# Squeez 2+ empty lines into 2.
+		s/\n\{2,\}/\n/
+		p
+		s/.*//
+	}
+	x
+	p
+}
+/^$/H
+#-----END PART 3-----
