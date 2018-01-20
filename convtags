@@ -192,9 +192,6 @@ dw2adoc() {
 	$SED -e "$(< "$0" $SED -n "/^#@part1@/,/^#@part2@/p")" "$cleaned_tmp" > "$asciidoc_tmp"
 	rm -f "$cleaned_tmp"
 
-	DKROOT="$(echo ${DKROOT%/}/ | $SED s.//..)"
-	DKIMAGES="$(echo ${DKIMAGES%/}/ | $SED s.//..)"
-
 	$SED -ne "$(< "$0" $SED -n "/^#@part2@/,/^#@EOF@/p" \
 			| $SED "sDKROOT$DKROOTg" \
 			| $SED "sDKIMAGES$DKIMAGESg" \
@@ -206,9 +203,6 @@ dw2adoc() {
 		"$asciidoc_tmp" \
 			| $SED -ne "$FINALIZE_SED" \
 			| $REWRITE_LINKS "$(dirname "$1")" > "$2"
-
-	DKROOT="$(echo ${DKROOT%/}/ | $SED s..//.)"
-	DKIMAGES="$(echo ${DKIMAGES%/}/ | $SED s..//.)"
 
 	rm -f "$asciidoc_tmp"
 }
