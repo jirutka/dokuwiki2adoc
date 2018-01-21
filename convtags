@@ -50,6 +50,9 @@
 #   -l --links-filter LINKS_FILTER
 #        Path of the script to use for filtering (rewriting) links.
 #
+#   -o --output FILE
+#        Path of the output file. If not specified, output is written to STDOUT.
+#
 #   -Q --quotes-type QUOTES_TYPE
 #        Specifies type of the quotation marks to convert 'single' and "double"
 #        quotes to.  Available types are:
@@ -123,6 +126,7 @@ dw2adoc() {
 : ${DW_MEDIA_URI:=}
 : ${DW_ROOT_URI:=}
 : ${LINKS_FILTER:="$SCRIPT_DIR/rewrite-links"}
+: ${OUTPUT:=/dev/stdout}
 : ${SED:=sed}
 
 while [ $# -gt 0 ]; do
@@ -132,6 +136,7 @@ while [ $# -gt 0 ]; do
 		-d | --dw-root-uri) DW_ROOT_URI="$2";;
 		     --image-exts) IMAGE_EXTS="${IMAGE_EXTS:-} $2";;
 		-l | --links-filter) LINKS_FILTER="$2";;
+		-o | --output) OUTPUT="$2";;
 		-Q | --quotes-type) QUOTES_TYPE="$2";;
 		     --sed) SED="$2";;
 		-h | --help) help 0;;
@@ -181,7 +186,7 @@ PART2_SED=$($SED -n \
 PART3_SED=$($SED -n \
 		-e '/^#-----BEGIN PART 3-----/,/^#-----END PART 3-----/p' < "$0")
 
-dw2adoc "$1" "$2"
+dw2adoc "$1" "$OUTPUT"
 
 exit
 
