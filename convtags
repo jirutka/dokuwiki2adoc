@@ -83,29 +83,41 @@ help() {
 	exit ${1:-0}
 }
 
+die() {
+	printf "$PROGNAME: %s\n" "$1" >&2
+	exit ${2:-1}
+}
+
 dw2adoc() {
-	local tmpfile1 tmpfile2
+	local infile="$1"
+	local outfile="$2"
+	local exit_codes tmpfile
 
-	tmpfile1=$(mktemp)
-	tmpfile2=$(mktemp)
+	[ -r "$infile" ] || die "$infile: File does not exist or is not readable"
 
-	# 1.1 Remove all control characters that we use as marks from the input
-	#     file. Textual files should not contain any of them, so it is
-	#     just to be sure.
-	# 1.2 Also ensure that the file does not end with a comment ("*/"). This is
-	#     needed for detection of unterminated comment to work correctly.
-	# 2.  Run the first part of the conversion.
-	$SED -e "s/[---​]//g" \
-		-e '$ s/$/\n\n/' < "$1" \
-		| $SED "$PART1_SED" > "$tmpfile1"
+	tmpfile=$(mktemp)
 
-	# Run the second part of the conversion.
-	$SED -ne "$PART2_SED" "$tmpfile1" \
-		| $SED -ne "$PART3_SED" \
-		| $LINKS_FILTER "$(dirname "$1")" > "$tmpfile2"
-	cat "$tmpfile2" > "$2"
+	# The conversion pipeline with proper error reporting.
+	# See https://unix.stackexchange.com/a/14290/55894 for explaination.
+	exit_codes=$({
+			  { $SED -e "$PART0_SED" < "$infile" || echo "c0:$?;" >&3; } \
+			| { $SED -e "$PART1_SED" || echo "c1:$?;" >&3; } \
+			| { $SED -n "$PART2_SED" || echo "c2:$?;" >&3; } \
+			| { $SED -n "$PART3_SED" || echo "c3:$?;" >&3; } \
+			| { $LINKS_FILTER "$(dirname "$1")" > "$tmpfile" || echo "cmd4:$?" >&3; } \
+		} 3>&1)
 
-	rm -f "$tmpfile1" "$tmpfile2"
+	case "${exit_codes%%;*}" in
+		c0:*)   die "$infile: Preparation failed" 10;;
+		c1:100) die "$infile: Unterminated comment in the input file" 21;;
+		c1:*)   die "$infile: Verticalization failed" 20;;
+		c2:*)   die "$infile: Main conversion failed" 30;;
+		c3:*)   die "$infile: Post-conversion failed" 40;;
+		c4:*)   die "$infile: Links filter failed" 50;;
+	esac
+
+	cat "$tmpfile" > "$outfile"
+	rm -f "$tmpfile"
 }
 
 : ${DW_MEDIA_URI:=}
@@ -148,6 +160,12 @@ case "${QUOTES_TYPE:-"plain"}" in
 	unicode-cs) LS_QUOTE='‚' RS_QUOTE='‘' LD_QUOTE='„' RD_QUOTE='“';;
 	*) LS_QUOTE="'" RS_QUOTE="'" LD_QUOTE='"' RD_QUOTE='"';;
 esac
+
+# Remove all control characters that we use as marks from the input file.
+# Textual files should not contain any of them, so it is just to be sure.
+# Also ensure that the file does not end with a comment ("*/").
+# This is needed for detection of unterminated comment to work correctly.
+PART0_SED='s/[---​]//g; $ s/$/\n\n/'
 
 PART1_SED=$($SED -n \
 		-e '/^#-----BEGIN PART 1-----/,/^#-----END PART 1-----/p' < "$0")
@@ -523,7 +541,7 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 		# I just don't know how), so we just add error after EOF and terminate.
 		$ {
 			s||\n\n**CAUTION: Conversion failed due to unterminated comment**\n&|
-			q6  # quit with status 6
+			q100  # quit with status 100
 		}
 		b comment-addline  # iterate
 	}
