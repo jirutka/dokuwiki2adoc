@@ -24,7 +24,7 @@
 #
 #---help---
 # Usage:
-#   convtags [options] [--] INPUT OUTPUT
+#   convtags [options] [--] FILE...
 #   convtags [-h|-V]
 #
 # Converter from DokuWiki to AsciiDoc (Asciidoctor) format.
@@ -51,7 +51,12 @@
 #        Path of the script to use for filtering (rewriting) links.
 #
 #   -o --output FILE
-#        Path of the output file. If not specified, output is written to STDOUT.
+#        Path of the output file(s).  It may contain a placeholder "%s" which
+#        will be replaced by path of the input FILE with stripped file
+#        extension (more precisely, FILE up to the last dot).  For example:
+#        `convtags -o out/%s.adoc docs/index.txt` -> out/docs/index.adoc.
+#        If not specified, output is written to the STDOUT, separated by \0
+#        if more FILEs are given.
 #
 #   -Q --quotes-type QUOTES_TYPE
 #        Specifies type of the quotation marks to convert 'single' and "double"
@@ -126,7 +131,7 @@ dw2adoc() {
 : ${DW_MEDIA_URI:=}
 : ${DW_ROOT_URI:=}
 : ${LINKS_FILTER:="$SCRIPT_DIR/rewrite-links"}
-: ${OUTPUT:=/dev/stdout}
+: ${OUTPUT:=}
 : ${SED:=sed}
 
 while [ $# -gt 0 ]; do
@@ -186,7 +191,21 @@ PART2_SED=$($SED -n \
 PART3_SED=$($SED -n \
 		-e '/^#-----BEGIN PART 3-----/,/^#-----END PART 3-----/p' < "$0")
 
-dw2adoc "$1" "$OUTPUT"
+
+while [ $# -gt 0 ]; do
+	destfile='/dev/stdout'
+	if [ "$OUTPUT" ]; then
+		destfile=$(printf %s "$OUTPUT" | $SED "s%s${1%.*}")
+		mkdir -p "$(dirname "$destfile")"
+	fi
+
+	dw2adoc "$1" "$destfile"
+	shift
+
+	if [ -z "$OUTPUT" ] && [ $# -gt 1 ]; then
+		printf '\0'
+	fi
+done
 
 exit
 
