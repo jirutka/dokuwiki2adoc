@@ -273,6 +273,7 @@ exit
 # Char     Corresponding mark or meaning
 # 01  :: begins a <code> ... </code> block
 # 02  :: begins a <file> ... </file> block
+# 03  :: begins a <latex> ... </latex> block
 # 04  :: separates the baton from the input data
 # 05  :: begins a preformatted block
 # 06  :: list item that can continue on the next line
@@ -330,9 +331,9 @@ exit
 	s/\n//
 }
 
-# If the baton included a  (code block), a  (file block) or a 
-# (preformatted block) indicator, move it at the beginning of the pattern
-# space so we know that we are in a delimited  block.
+# If the baton included a  (code block),  (file block), or  (latex block)
+# indicator, move it at the beginning of the pattern space so we know that we
+# are in a delimited  block.
 // {
 	s///
 	s/^//
@@ -340,6 +341,10 @@ exit
 // {
 	s///
 	s/^//
+}
+// {
+	s///
+	s/^//
 }
 
 :begin
@@ -364,7 +369,7 @@ exit
 # * In DokuWiki an empty line ends a list, then the next list item will
 #   be of level 1 regardless of the number of spaces before "*" or "-".
 
-/[]/ !{
+/[]/ !{
 	# Convert (un)ordered list item with multiple paragraphs (yalist plugin)
 	# into normal list on single line; following lines are concatenated with
 	# a line break (\\).
@@ -485,9 +490,11 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 	s|^||
 	:unmark-blocks
 
-	# If we're in a code/file (or cli) block opened on some previous line...
+	# If we're in a code/file/latex (or cli) block opened on some previous
+	# line...
 	/^/ b unmark-code
 	/^/ b unmark-file
+	/^/ b unmark-latex
 
 	# Remove special mark inside <code[^>]*>...</code> (or </cli>).
 	# XXX: This process even <cli> tag, so we don't need to reserve another
@@ -508,15 +515,6 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 		b unmark-code
 	}
 
-	# Remove special mark inside <latex>...</latex>.
-	/[^]*<latex>/ {
-		s/\([^]*<latex>\)/\1/  # first move  behind <latex>
-		:unmark-latex
-		s/\([^]*\)\([^]\)/\1\2/  # remove all  until </latex>
-		t unmark-latex
-		s/\([^]*\)/\1/  # move  behind </latex>
-	}
-
 	# Remove special mark inside <file[^>]*>...</file>.
 	/[^]*<file[^>]*>/ {
 		s/\([^]*<file[^>]*>\)/\1/  # first move  behind <file>
@@ -533,6 +531,16 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 		s/\([^]*\)\([^]\)/\1\2/  # remove all  until </nowiki>
 		t unmark-nowiki
 		s/\([^]*\)/\1/  # move  behind </nowiki>
+	}
+
+	# Remove special mark inside <latex>...</latex>.
+	# This is for old DokuWiki's latex plugin.
+	/[^]*<latex>/ {
+		s/\([^]*<latex>\)/\1/  # first move  behind <latex>
+		:unmark-latex
+		s/\([^]*\)\([^]\)/\1\2/  # remove all  until </latex>
+		t unmark-latex
+		s/\([^]*\)/\1/  # move  behind </latex>
 	}
 
 	# Remove special mark inside %%...%%.
@@ -556,17 +564,15 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 	# Replace %%...%% with ... (<0x07>...<0x08>).
 	s|\([^]*\)|\1|g
 
+	# Replace marked inline <latex>...</latex> with
+	# <nowiki> with flag  <0x8c>.
+	s|<latex>\([^]*\)|\1|g
+
 	# Revert tentative substitutions.
 	s||%%|g
 	s||</nowiki>|g
 	s||</code>|g
 	s||</file>|g
-
-	# Replace marked <latex> with <nowiki> with flag  <0x8c>.
-	s|<latex>\$\?||g
-
-	# Replace marked </latex> with  <0x08> (</nowiki>).
-	s|\$\?||g
 	s||</latex>|g
 
 	# Replace marked </cli> with </code>.
@@ -607,13 +613,17 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 
 
 # ============================================================================ #
-#                                 Code Blocks                                  #
+#                            Code and LaTeX Blocks                             #
 # ============================================================================ #
 
-# Here "code block" designate a block surrounded by <code ...> then
+# Here "code block" is designate a block surrounded by <code ...> then
 # </code> or by <file ...> then </file>: they have the same syntax in
 # DokuWiki. We will convert these blocks in "literal blocks" in
 # Asciidoc parlance.
+#
+# Here latex block is a multi-line block surrounded by <latex> then </latex>.
+# We will eventually (in part2) convert these blocks into passthrough block
+# labeled as [stem].
 #
 # In DokuWiki syntax a code block that begins inside a line belonging to
 # a list item is embedded in this list item.
@@ -646,8 +656,8 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 # We perform here the first part of the conversion, that is isolate each
 # tag on a line, the opening tag being preceded by a line with
 # [source,<language>] in case of syntax highlighting.
-# The replacement of the tags by lines containing just"----" will be made
-# in the second part of the program.
+# The replacement of the tags by lines containing just "----" (or "++++" for
+# latex block) will be made in the second part of the program.
 
 /<\(code\|file\)[^>]*>/ {
 	# Downloadable file block - convert file name into AsciiDoc block title.
@@ -672,11 +682,11 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 	s/<\(code\|file\)\([^>]*\)> */<\1\2>/g
 }
 
-# In this loop we process all code blocks in an input line.
+# In this loop we process all code and latex blocks in an input line.
 :codes
 
 # ---------------------------------------------------------------------------- #
-#                        Code blocks outside a list item                       #
+#                   Code and latex blocks outside a list item                  #
 # ---------------------------------------------------------------------------- #
 // ! {
 	# Closing tags
@@ -715,6 +725,20 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 		s@\([^]*[[:print:]]\)</file> *@\1\n</file>@
 		# Inside a line.
 		s@\([^]*[[:print:]]\)</file>\([[:print:]]\)@\1\n</file>\n\2@
+	}
+	\@</latex>@ {
+		# Do not allow a forced line break after a closing tag.
+		s@^\(</latex>\) *[\][\] *@\1@
+		s@\([^]*</latex>\) *[\][\] *@\1@
+
+		# On a separate line.
+		s@^</latex> *@</latex>\n@
+		# Begins a line.
+		s@^</latex>\([[:print:]]\)@</latex>\n\1@
+		# Ends a line.
+		s@\([^]*[[:print:]]\)</latex> *@\1\n</latex>@
+		# Inside a line.
+		s@\([^]*[[:print:]]\)</latex>\([[:print:]]\)@\1\n</latex>\n\2@
 	}
 
 	# Opening tags
@@ -771,10 +795,21 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 			s/\([[:print:]]\)<file \([[:alnum:]]\+\)\(\.[^>]*\)\?>\([[:print:]]\)/\1\n[source,\2]\n\3<file>\n\4/
 		}
 	}
+	# Latex block.
+	/<latex>/ {
+		# On a separate line.
+		s/^<latex>/<latex>/
+		# Begins a line.
+		s/^<latex>\([[:print:]]\)/<latex>\n\1/
+		# Ends a line. If we are in a list item, it continues.
+		s/<latex> */\n<latex>/
+		# Inside a line.
+		s/\([[:print:]]\)<latex>\([[:print:]]\)/\1\n<latex>\n\2/
+	}
 }
 
 # ---------------------------------------------------------------------------- #
-#                        Code blocks inside a list item                        #
+#                   Code and latex blocks inside a list item                   #
 # ---------------------------------------------------------------------------- #
 // {
 	# Closing tags
@@ -815,6 +850,21 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 		# Inside a line.
 		s@\([^]*[[:print:]]\)</file>\([[:print:]]\)@\1\n</file>\n+\n\2@
 	}
+	\@</latex>@ {
+		# Do not allow a forced line break after a closing tag or at EOL
+		s@^\(</latex>\) *[\][\] *@\1@
+		s@^\(</latex>.*\)[\][\]@\1@
+		s@\([^]*</latex>\) *[\][\] *@\1@
+
+		# On a separate line.
+		s@^</latex> *@</latex>\n+@
+		# Begins a line.
+		s@^</latex>\([[:print:]]\)@</latex>\n+\n\1@
+		# Ends a line.
+		s@\([^]*[[:print:]]\)</latex> *@\1\n</latex>\n+@
+		# Inside a line.
+		s@\([^]*[[:print:]]\)</latex>\([[:print:]]\)@\1\n</latex>\n+\n\2@
+	}
 
 	# Opening tags
 	# ~~~~~~~~~~~~
@@ -854,14 +904,21 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 			s/<file \([[:alnum:]]\+\)\(\.[^>]*\)\?>/\n+\n[source,\1]\n\2<file>/
 		}
 	}
+	# Latex block.
+	/<latex>/ {
+		# Inside a line.
+		s/\([[:print:]]\)<latex>\([[:print:]]\)/\1\n+\n<latex>\n\2/
+		# Ends a line. If we are in a list item, it continues.
+		s/<latex>/\n+\n<latex>/
+	}
 }
 t codes
 
-# If  <0x06> and we closed a Code block,  <0x04> should be preceded by
-# a "line continuation" indicator. We check that after all forced line breaks
-# have been converted after the Code block.
+# If  <0x06> and we closed a code or latex block,  <0x04> should be
+# preceded by a "line continuation" indicator. We check that after all forced
+# line breaks have been converted after the code or latex block.
 // {
-	/[^]*/ {
+	/[^]*/ {
 		/\n+/ !s//\n+/
 	}
 }
@@ -877,18 +934,22 @@ t codes
 		}
 		# Listing block
 		s/\(\.[^\n]*\n\)\?<\(code>\|file>\)/\n&/
+		# LaTeX block
 	}
+	# Insert a newline before a latex block.
+	s/<latex>/\n&/
 }
 
 :out
 
-# Inside Code blocks, we escape "----" that ends an AsciiDoc Listing block.
+# Inside code blocks, we escape "----" that ends an AsciiDoc Listing block.
+# Inside latex blocks, we escape "++++" that ends an AsciiDoc STEM block.
 # We precede it by a  <0x15> now to ease checking. We will replace it by
 # a zero width space <200B> before printing the line.
-/[]/ {
+/[]/ {
 	s/\([]\)\(----\)/\1\2/
+	s/^++++/++++/
 }
-
 
 # ============================================================================ #
 #                              Preformatted text                               #
@@ -915,13 +976,15 @@ t codes
 	# that we will remove before printing.
 	/^  / s/  //
 
-	# And inside this line "escape" the <code[^]]*> and </code> and
-	# <file[^]]*> and </file> so they be not considered as such in the
-	# second part.
+	# And inside this line "escape" the <code[^]]*> and </code>, <file[^]]*>
+	# and </file>, and <latex> and </latex> so they be not considered as such
+	# in the second part.
 	s@<code\([^>]*>\)@<code\1@g
 	s@</code>@</code>@g
 	s@<file\([^>]*>\)@<file\1@g
 	s@</file>@</file>@g
+	s@<latex>@<latex>@g
+	s@</latex>@</latex>@g
 
 	# And also escape "----" that ends an AsciiDoc Listing block.
 	s@^----@----@
@@ -963,7 +1026,7 @@ t codes
 # in cases where <line of text> is very short like "to".
 # NOTE: Does this apply even to Asciidoctor?
 #
-/[]/ !{
+/[]/ !{
 	/^   *[[:graph:]]/ {
 		s/^/<code>\n/
 		s/^<code>/\n&/
@@ -1031,7 +1094,7 @@ t codes
 # ">" after each quote line.  We also need to make sure that an empty line
 # precedes a set of quoted lines.
 #
-/[]/ !{
+/[]/ !{
 	/^>/ !{
 		# If the previous line was a block quote...
 		/\([^>]*\)>\([^>]*\)/ {
@@ -1073,17 +1136,16 @@ t codes
 #                              Forced line break                               #
 # ============================================================================ #
 
-# Line breaks after code blocks are already converted.
-# Remove line breaks after </code> or </file>.
-s@</code> *[\][\] *@</code>@g
-s@</file> *[\][\] *@</file>@g
+# Line breaks after code and latex blocks are already converted.
+# Remove line breaks after </code>, </file>, or </latex>.
+s@</\(code\|file\|latex\)> *[\][\] *@</\1>@g
 
 # Inside a list item
 # ~~~~~~~~~~~~~~~~~~
 # * A line break at end of line will be removed.
 # * Line continuation indicators will be converted.
 # * If a forced line break has been converted a \n+ is appended unless
-#   the line ends in <code[^>]*> or <file[^>]*>.
+#   the line ends in <code[^>]*>, <file[^>]*> or <latex>.
 // {
 	:ack
 	/[\][\] */ s/[\][\] *//
@@ -1091,7 +1153,9 @@ s@</file> *[\][\] *@</file>@g
 		s/ *[\][\]  */\n+\n/
 		/<code[^>]*>/ !{
 			/<file[^>]*>/ !{
-				/\n+/ !s//\n+/
+				/<latex>/ !{
+					/\n+/ !s//\n+/
+				}
 			}
 		}
 	}
@@ -1123,15 +1187,15 @@ s@</file> *[\][\] *@</file>@g
 :linebr
 /^[|^]/ !{
 	// !{
-		# No part of the line is in a Code block or nowiki area.
+		# No part of the line is in a code/latex block or nowiki area.
 		:linebr1
-		/^[^]/ {
+		/^[^]/ {
 			s/^ *[\][\] *//
 			s/[\][\] */ +/
 			s/ *[\][\]  */ +\n/
 		}
-		# This part of the line follows a Code block.
-		/[^]*[\][\]/ {
+		# This part of the line follows a code/latex block.
+		/[^]*[\][\]/ {
 			s/[\][\] */ +/
 			s/ *[\][\]  */ +\n/
 		}
@@ -1265,11 +1329,14 @@ x
 // {
 	/[^]*/ !s//&/
 }
+// {
+	/[^]*/ !s//&/
+}
 
 s/.*//
 x
 s/.*//
-s/[]//g
+s/[]//g
 
 #-----END PART 1-----
 
@@ -1288,6 +1355,7 @@ s/[]//g
 # Char     Corresponding mark or meaning
 # 01  :: <code>
 # 02  :: <file>
+# 03  :: multi-line <latex> block
 # 04  :: separates the stack from the input data
 # 05  :: to mark characters that have a special meaning
 # 06  :: tentatively replaces "mono-spaced" '' =>  => ``
@@ -1353,11 +1421,11 @@ s/[]//g
 s/\[\[//g
 s/\]]//g
 
-# If we see the beginning of a Code block, we indicate that in the baton.
-# Then we print the line and begin another cycle until we find a closing
-# tag. Then we remove the Code block indicator from the baton, print the
-# line and start a new cycle.
-/[]/ !{
+# If we see the beginning of a code block or multi-line latex block, we
+# indicate that in the baton. Then we print the line and begin another cycle
+# until we find a closing tag. Then we remove the code block indicator from
+# the baton, print the line and start a new cycle.
+/[]/ !{
 	/^\[source,[[:alpha:]]*\]/ b print
 	/^\[verse]/ b print
 	/^<code>/ {
@@ -1370,10 +1438,15 @@ s/\]]//g
 		s/<file>/----/
 		b print
 	}
+	/^<latex>/ {
+		s///
+		s/<latex>/\[stem\]\n++++/
+		b print
+	}
 }
 
 # Prevent expansion of an include macro inside an AsciiDoc Delimited block.
-/[]/ {
+/[]/ {
 	s/^include::/\\&/
 }
 
@@ -1396,6 +1469,19 @@ s/\]]//g
 		b print
 	}
 	\@</file>@ !{
+		b print
+	}
+}
+
+# Get rid of the multi-line latex blocks, converted to STEM blocks: skip
+# parsing their content.
+// {
+	\@</latex>@ {
+		s///
+		s@</latex>@++++@
+		b print
+	}
+	\@</latex>@ !{
 		b print
 	}
 }
