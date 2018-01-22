@@ -2204,6 +2204,9 @@ p
 	}
 }
 
+# Trim trailing spaces.
+s/  *$//
+
 # Squeez empty lines and remove trailing empty lines.
 /^$/ !{
 	x
