@@ -566,7 +566,7 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 
 	# Replace marked inline <latex>...</latex> with
 	# <nowiki> with flag  <0x8c>.
-	s|<latex>\([^]*\)|\1|g
+	s|<latex>\([^]*\)|\1|g
 
 	# Revert tentative substitutions.
 	s||%%|g
@@ -2132,7 +2132,10 @@ s/:?:/icon:question[]/g
 
 # Inline STEM (LaTeX)
 // {
-	s/\([^]*\)/stem:\[\1\]/g
+	# Trim "$" and "$$" after the opening tag and before the closing tag.
+	# (This was used in some older version of the latex plugin in DokuWiki.)
+	s/ *[$][$]\?//g
+	s/[$]\{0,2\} *\([^]*\)/stem:\[\1\]/g
 }
 
 # Em dash
