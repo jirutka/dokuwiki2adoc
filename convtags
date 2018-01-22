@@ -32,6 +32,11 @@
 #
 # Options and environment variables:
 #
+#   -a --adoc-attr <key=value>...
+#        Attribute to be added into the converted AsciiDoc document.
+#        This option may be specified multiple times and the value may contain
+#        spaces (really!).  Example: -a source-highlighter=rouge toc= sectnums!=
+#
 #   --dw-media-uri DW_MEDIA_URI
 #        Base URI of the images path of the DokuWiki instance *without* the
 #        protocol part (e.g. https://).  The purpose is the same as for
@@ -97,9 +102,31 @@ die() {
 	exit ${2:-1}
 }
 
+# Inject attributes specified as IS1-separated key=value in $2 into
+# the file $1 as top-level AsciiDoc attributes.
+# Usage: inject_attrs foo.adoc "stem=latexmathtoc="
+inject_attrs() {
+	local file="$1"
+	local attrs="${2#}"
+	local chunk=''
+	local item value
+
+	local IFS=
+	for item in $attrs; do
+		value="${item#*=}"
+		chunk="$chunk${chunk:+\n}:${item%%=*}:${value:+ }$value"
+	done
+
+	$SED -i -e '1,2 {' \
+		-e '/^:imagesdir:/a\' \
+		-e "$chunk" \
+		-e '}' "$file"
+}
+
 dw2adoc() {
 	local infile="$1"
 	local outfile="$2"
+	local attrs="${3#}"
 	local exit_codes tmpfile
 
 	[ -r "$infile" ] || die "$infile: File does not exist or is not readable"
@@ -125,10 +152,15 @@ dw2adoc() {
 		c4:*)   die "$infile: Links filter failed" 50;;
 	esac
 
+	if [ "$attrs" ]; then
+		inject_attrs "$tmpfile" "$attrs"
+	fi
+
 	cat "$tmpfile" > "$outfile"
 	rm -f "$tmpfile"
 }
 
+ADOC_ATTRS=''
 : ${DW_MEDIA_URI:=}
 : ${DW_ROOT_URI:=}
 : ${LINKS_FILTER:="$SCRIPT_DIR/rewrite-links"}
@@ -138,6 +170,7 @@ dw2adoc() {
 while [ $# -gt 0 ]; do
 	n=2
 	case "$1" in
+		-a | --adoc-attr) ADOC_ATTRS="$ADOC_ATTRS$2";;
 		     --dw-media-uri) DW_MEDIA_URI="$2";;
 		-d | --dw-root-uri) DW_ROOT_URI="$2";;
 		     --image-exts) IMAGE_EXTS="${IMAGE_EXTS:-} $2";;
@@ -200,7 +233,7 @@ while [ $# -gt 0 ]; do
 		mkdir -p "$(dirname "$destfile")"
 	fi
 
-	dw2adoc "$1" "$destfile"
+	dw2adoc "$1" "$destfile" "$ADOC_ATTRS"
 	shift
 
 	if [ -z "$OUTPUT" ] && [ $# -gt 1 ]; then
