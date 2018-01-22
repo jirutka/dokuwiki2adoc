@@ -123,6 +123,12 @@ inject_attrs() {
 		-e '}' "$file"
 }
 
+# Returns 0 if the specified AsciiDoc file ($1) contains stem blocks or stem:[]
+# macros. This just just a quick and detection that may produce false positives.
+detect_stem() {
+	grep -q '\(^\[stem\]\|stem:\[[^]]\+\]\)' "$1"
+}
+
 dw2adoc() {
 	local infile="$1"
 	local outfile="$2"
@@ -151,6 +157,11 @@ dw2adoc() {
 		c3:*)   die "$infile: Post-conversion failed" 40;;
 		c4:*)   die "$infile: Links filter failed" 50;;
 	esac
+
+	# Define :stem: attribute if the document contains STEM (latex).
+	if detect_stem "$tmpfile"; then
+		attrs="stem=latexmath${attrs:+}$attrs"
+	fi
 
 	if [ "$attrs" ]; then
 		inject_attrs "$tmpfile" "$attrs"
