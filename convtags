@@ -296,6 +296,7 @@ exit
 # 17  :: local tentative replacement
 # 1A  :: begins a <note[^<]*> ... </note> area
 # 1C  :: tentatively replaces /^  / in a preformatted block
+# 1D  :: local tentative replacement
 #
 # We have to deal with DokuWiki's syntax that:
 # * allows to put the opening or closing tag of a block anywhere on a line,
@@ -461,6 +462,7 @@ exit
 
 # Mark sequences that have a special meaning in DokuWiki syntax.
 s|%%|&|g
+s|[$][$]|&|g  # latex block in mathjax plugin
 s|</\?nowiki>|&|g
 s|</\?code>|&|g
 s|</\?file>|&|g
@@ -483,6 +485,7 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 	s|</file>||g
 	s|</cli>||g
 	s|</latex>||g
+	s|[$][$]||g
 
 	# The following substitutions are repeated until whole line is processed.
 	# Symbol  <0x16> is moved after each substitution to denote part of the
@@ -552,6 +555,21 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 		s/\([^]*\)/\1/  # move  behind %%
 	}
 
+	# Remove special mark inside $$...$$ (but not across the lines).
+	# This is for DokuWiki's latex and mathjax plugins.
+	#
+	# FIXME: DokuWiki recognizes $$...$$ even inside nowiki area, but we don't.
+	# FIXME: $$ may not be closed at the same line, but we don't support it.
+	/[^]*/ {
+		s/[^]*/&/g  # mark every second (i.e. closing) $$
+		s/\([^]*\)/\1/  # move  behind $$
+		:unmark-$$
+		s/\([^]*\)\([^]\+\)/\1\2/  # remove all  until closing $$
+		t unmark-$$
+		s/\([^]*\)/\1/  # move  behind $$
+		s///g  # remove every-second mark
+	}
+
 	# Repeat if there's some remaining marked tag after the pointer ().
 	/.*/ t unmark-blocks
 
@@ -568,8 +586,13 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 	# <nowiki> with flag  <0x8c>.
 	s|<latex>\([^]*\)|\1|g
 
+	# Replace marked inline $$...$$ with <latex>...</latex>,
+	# so it will be converted into STEM block (i.e. TeX w/ display environment).
+	s|\([^]*\)|<latex>\1</latex>|g
+
 	# Revert tentative substitutions.
 	s||%%|g
+	s||$$|g
 	s||</nowiki>|g
 	s||</code>|g
 	s||</file>|g
@@ -800,11 +823,11 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 		# On a separate line.
 		s/^<latex>/<latex>/
 		# Begins a line.
-		s/^<latex>\([[:print:]]\)/<latex>\n\1/
+		s/^<latex> *\([[:print:]]\)/<latex>\n\1/
 		# Ends a line. If we are in a list item, it continues.
 		s/<latex> */\n<latex>/
 		# Inside a line.
-		s/\([[:print:]]\)<latex>\([[:print:]]\)/\1\n<latex>\n\2/
+		s/\([[:print:]]\)<latex> *\([[:print:]]\)/\1\n<latex>\n\2/
 	}
 }
 
@@ -907,7 +930,7 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 	# Latex block.
 	/<latex>/ {
 		# Inside a line.
-		s/\([[:print:]]\)<latex>\([[:print:]]\)/\1\n+\n<latex>\n\2/
+		s/\([[:print:]]\)<latex> *\([[:print:]]\)/\1\n+\n<latex>\n\2/
 		# Ends a line. If we are in a list item, it continues.
 		s/<latex>/\n+\n<latex>/
 	}
