@@ -84,6 +84,8 @@
 # Each option can be also provided by environment variable.  If both option and
 # variable is specified and the option accepts only one argument, then the
 # option takes precedence.
+#
+# Please report bugs at <https://github.com/jirutka/dokuwiki2adoc/issues>.
 #---help---
 set -eu
 
