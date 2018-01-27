@@ -1,0 +1,46 @@
+= DokuWiki to AsciiDoc Converter
+:source-language: shell
+// links
+:dw-plugin: https://www.dokuwiki.org/plugin
+
+This project is a converter from DokuWiki to http://asciidoctor.org/docs/what-is-asciidoc/[AsciiDoc] markup.
+It’s the most complete converter between these markups you can find.footnote:[If you know about better, more complete converter from DokuWiki to AsciiDoc, please let me know!]
+
+
+== Requirements
+
+* Linux system with common userland (Busybox, GNU coreutils, ...)
+* http://pubs.opengroup.org/onlinepubs/009695399/utilities/xcu_chap02.html[POSIX-sh] compatible shell (e.g. Busybox ash, dash, ZSH, Bash, ...)
+* `sed` supporting GNU extensions: `\?`, `\+`, `\|`, `^` inside subexpressions, and `q` with exit code
+* Python for rewriting internal links
+
+
+== Features and Limitations
+
+Most syntactic DokuWiki constructs can be converted to AsciiDoc.
+
+Known limitations in the conversion from DokuWiki to AsciiDoc:
+
+* No syntax checking is done of the input file.
+* Appending a downloadable file (code snippet) to a Code block is not available (the link to the file is silently discarded by the converter).
+* Anchors (links to a location on the same page) may not work due to different naming conventions.
+* The vertical spanning (over several rows) of table cells is not provided.
+* Text decorations and “text not to be parsed” marks are only converted if opening and closing marks are on the same line.
+* Windows shares and Interwiki links are not converted.
+* Embedding HTML and PHP is not available.
+* RSS/Atom feed integration is not available.
+* Text to image conversion is not available.
+
+
+== Credits
+
+dokuwiki2adoc is a fork of https://github.com/DidierSpaier/convtags[convtags] created by https://github.com/DidierSpaier/[Didier Spaier] for the http://www.slackware.com/[Slackware Linux Project].
+The most essential sed magic in this converter is Didier’s work.
+I’ve fixed many bugs and improved it a lot, yet I still don’t understand how exactly some of the tricks with hold space work.
+Didier is a real sed master!
+
+
+== License
+
+This project is licensed under https://spdx.org/licenses/BSD-1-Clause.html[BSD-1-Clause License].
+For the full text of the license, see the link:LICENSE[LICENSE] file.
