@@ -25,8 +25,8 @@
 #
 #---help---
 # Usage:
-#   convtags [options] [--] FILE...
-#   convtags [-h|-V]
+#   dokuwiki2adoc [options] [--] FILE...
+#   dokuwiki2adoc [-h|-V]
 #
 # Converter from DokuWiki to AsciiDoc (Asciidoctor) format.
 #
@@ -60,7 +60,7 @@
 #        Path of the output file(s).  It may contain a placeholder "%s" which
 #        will be replaced by path of the input FILE with stripped file
 #        extension (more precisely, FILE up to the last dot).  For example:
-#        `convtags -o out/%s.adoc docs/index.txt` -> out/docs/index.adoc.
+#        `dokuwiki2adoc -o out/%s.adoc docs/index.txt` -> out/docs/index.adoc.
 #        If not specified, output is written to the STDOUT, separated by \0
 #        if more FILEs are given.
 #
@@ -87,7 +87,7 @@
 #---help---
 set -eu
 
-PROGNAME='convtags'
+PROGNAME='dokuwiki2adoc'
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 VERSION=1
 
