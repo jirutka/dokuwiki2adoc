@@ -88,7 +88,7 @@ a| * `++$...$++` is converted to `++stem:[...]++`,
 | Note is converted to a corresponding admonition block, or admonition paragraph if
 
 | {dw-plugin}:yalist[yalist]
-| Only (un)ordered list item with single extra paragraph denoted by `..` on the line immediately after the list item (`**` or `--`) is supported.
+| Only (un)ordered list item with single extra paragraph denoted by `..` on the line immediately after the list item (`pass:[**]` or `--`) is supported.
 |
 |===
 
