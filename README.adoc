@@ -3,8 +3,17 @@
 // links
 :dw-plugin: https://www.dokuwiki.org/plugin
 
+_A study in “insanity”._
+
 This project is a converter from DokuWiki to http://asciidoctor.org/docs/what-is-asciidoc/[AsciiDoc] markup.
 It’s the most complete converter between these markups you can find.footnote:[If you know about better, more complete converter from DokuWiki to AsciiDoc, please let me know!]
+
+What’s especially interesting about this converter is the implementation.
+It’s completely written in https://linux.die.net/man/1/sed[*sed*]!
+Moreover, using just BRE (Basic Regular Expression) with few GNU extensions and some glue in (POSIX) shell.
+That’s quite insane, isn’t it?
+I’d say that it’s like trying to dig a hole with just teaspoon, but it works surprisingly good!
+Hence the subtitle: “A study in insanity”.footnote:[This phrase is inspired by https://prosody.im/[Prosody] – A study in simplicity.]
 
 
 == Requirements
