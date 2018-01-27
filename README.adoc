@@ -32,6 +32,57 @@ Known limitations in the conversion from DokuWiki to AsciiDoc:
 * Text to image conversion is not available.
 
 
+=== Supported Plugins
+
+In addition to the basic DokuWiki syntax, the following plugins are supported:
+
+[%header, cols="1,4,4"]
+|===
+| Plugin
+| Limitations
+| Notes
+
+| {dw-plugin}:cli[cli]
+| All attributes (prompt, comment, continue) are ignored.
+| Converted to a source block with lang “sh”.
+
+| {dw-plugin}:code[code]
+| No limitations.
+| Code title is converted to a block title.
+
+| {dw-plugin}:code2[code2]
+| Line number is ignored, no difference between header and footer.
+| Header/footer is converted to a block title.
+
+| {dw-plugin}:comment[comment]
+| If comment is not properly terminated, the converter terminates with an error.
+| Content between the marks is discarded from the output.
+
+| {dw-plugin}:htmlcomment[htmlcomment]
+| Recognized only when opening and closing tags are on the same line.
+| Content between `++<!--++` and `++-->++` tags is discarded from the output.
+
+| {dw-plugin}:latex[latex], {dw-plugin}:mathjax[mathjax]
+| Latex delimiters are not recognized in a nowiki area.
+
+`++$...$++` and `++$$...$$++` are not recognized when opening and closing delimiters are not on the same line.
+
+`++$...$++` is converted only when there’s no alphanumeric character before/after opening/closing `$`, no space after/before opening/closing `$`, and no character with a special meaning after opening `$`.
+
+a| * `++$...$++` is converted to `++stem:[...]++`,
+   * `++$$...$$++` is converted to a STEM block,
+   * `++<latex>...</latex>++` is converted to `++stem:[...]++` if opened/closed tags are on the same line, otherwise to a STEM block.
+
+| {dw-plugin}:note[note]
+| No limitations.
+| Note is converted to a corresponding admonition block, or admonition paragraph if
+
+| {dw-plugin}:yalist[yalist]
+| Only (un)ordered list item with single extra paragraph denoted by `..` on the line immediately after the list item (`**` or `--`) is supported.
+|
+|===
+
+
 == Credits
 
 dokuwiki2adoc is a fork of https://github.com/DidierSpaier/convtags[convtags] created by https://github.com/DidierSpaier/[Didier Spaier] for the http://www.slackware.com/[Slackware Linux Project].
