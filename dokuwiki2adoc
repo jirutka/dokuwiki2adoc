@@ -148,7 +148,7 @@ dw2adoc() {
 			| { $SED -e "$PART1_SED" || echo "c1:$?;" >&3; } \
 			| { $SED -n "$PART2_SED" || echo "c2:$?;" >&3; } \
 			| { $SED -n "$PART3_SED" || echo "c3:$?;" >&3; } \
-			| { $LINKS_FILTER "$(dirname "$1")" > "$tmpfile" || echo "cmd4:$?" >&3; } \
+			| { $LINKS_FILTER "$(dirname "$1")" > "$tmpfile" || echo "c4:$?" >&3; } \
 		} 3>&1)
 
 	case "${exit_codes%%;*}" in
