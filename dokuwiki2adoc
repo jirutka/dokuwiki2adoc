@@ -716,6 +716,11 @@ s|\([ \n]\)\(/[*]\)|\1\2|g  # start of comment /*
 
 	# Discard extra spaces between code/file tag and end of the line.
 	s/<\(code\|file\)\([^>]*\)> */<\1\2>/g
+
+	# If the list item starts with a code/file block, insert "{blank}"
+	# before the code block. Otherwise it would end up as an "empty" listm item,
+	# thus will not be recognized by Asciidoctor as a list item.
+	// s/^\([*]\+ \) *\(<\(code\|file\)[^>]*>\)/\1{blank}\2/
 }
 
 # In this loop we process all code and latex blocks in an input line.
