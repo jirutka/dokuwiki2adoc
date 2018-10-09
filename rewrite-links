@@ -7,6 +7,9 @@ import re
 import sys
 from sys import exit
 
+# https://www.dokuwiki.org/config:startpage
+STARTPAGE = 'start'
+
 
 def die(msg, status=1):
     print(msg, file=sys.stderr)
@@ -28,9 +31,9 @@ def normalize_target(target):
         return suffix
 
     # Target that ends with ":" refers to the namespace, i.e. default page of
-    # the namespace which is "start".
+    # the namespace.
     if target.endswith(':'):
-        target += 'start'
+        target += STARTPAGE
 
     # Replace namespace separator with "/".
     target = target.replace(':', '/')
@@ -43,9 +46,9 @@ def normalize_target(target):
     # Replace e.g. ".foo" with "./foo", "..foo" with "../foo".
     target = re.sub('^(\.\.?)([^/.])', '\\1/\\2', target)
 
-    # Rename "start" (default page of the namespace) to "index".
-    if target == 'start' or target.endswith('/start'):
-        target = target[0:-5] + 'index'
+    # Rename the default page of the namespace to "index".
+    if target == STARTPAGE or target.endswith('/' + STARTPAGE):
+        target = target[0:-len(STARTPAGE)] + 'index'
 
     return target + suffix
 
