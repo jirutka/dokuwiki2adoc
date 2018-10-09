@@ -27,6 +27,11 @@ def normalize_target(target):
     if not target:
         return suffix
 
+    # Target that ends with ":" refers to the namespace, i.e. default page of
+    # the namespace which is "start".
+    if target.endswith(':'):
+        target += 'start'
+
     # Replace namespace separator with "/".
     target = target.replace(':', '/')
 
